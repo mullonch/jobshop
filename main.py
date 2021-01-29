@@ -9,3 +9,8 @@ if sol.is_realisable():
     print(sol.str_matrix())
     print(sol.str_ressource_matrix())
     print(sol.str_job_matrix())
+
+
+
+
+'test'
