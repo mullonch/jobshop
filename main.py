@@ -7,10 +7,5 @@ print(sol)
 print(sol.is_realisable())
 print(sol.get_duration())
 
-exit()
-sol = js.pick_mf_solution()
-print(str(sol))
-if sol.is_realisable():
-    print("Total duration : ", sol.get_duration())
-    print(sol.gant())
-    print(sol.ressource_matrix())
+results = js.heuristique_gloutonne()
+print(results)
