@@ -1,7 +1,9 @@
 """
     Module permettant de matérialiser des problèmes de JobShop
 """
+from copy import deepcopy
 from utils.Graphe import *
+
 
 class Task:
     """
@@ -17,11 +19,10 @@ class Task:
 
     def __repr__(self):
         return self.node_name
-        #return "{job:"+str(self.ijob)+","+"task:"+str(self.itask)+","+"m:" + str(self.machine) + ", d:" + str(self.duration) + "}"
+        # return "{job:"+str(self.ijob)+","+"task:"+str(self.itask)+","+"m:" + str(self.machine) + ", d:" + str(self.duration) + "}"
 
     @staticmethod
     def node_name(ijob, itask):
-
         """
         :param ijob: identifiant du job dans lequel est la tâche
         :param itask: position de la tache dans le job (0 = première tache)
@@ -149,12 +150,37 @@ class JobShop:
         # TODO : faire un selecteur de solution potable
         return self.pick_first_solution()
 
-    def heuristique_gloutonne(self,priority = 'SPT'):
+    def heuristique_gloutonne_2(self, strategy="SPT"):
+        """
+        :param priority: chaine de caractère définissant la stratégie de choix :
+        SPT : Shortest Processing Time
+        LPT : Longest Processing Time
+        SRPT : Shortest Remaining Processing Time
+        LRPT : Longest Remaining Processing Time
+        :return:
+        """
+        result = [[] for _ in range(self.nb_machines)]
+        jobs = deepcopy(self.jobs)
+        realisables = [job[0] for job in jobs]
+        selectors = {
+            "SPT": lambda x: next(a for a in x if a.duration == min(a.duration for a in x)),
+            "LPT": lambda x: next(a for a in x if a.duration == max(a.duration for a in x)),
+            "SRPT": lambda x: next(a for a in x if sum(t.duration for t in jobs[a.ijob]) == min(
+                sum(a.duration for a in j) for j in jobs if len(j) > 0)),
+            "LRPT": lambda x: next(a for a in x if sum(t.duration for t in jobs[a.ijob]) == max(
+                sum(a.duration for a in j) for j in jobs if len(j) > 0))
+        }
+        while len(realisables) > 0:
+            next_task = selectors[strategy](realisables)
+            result[next_task.machine].append(jobs[next_task.ijob].pop(0))
+            realisables = [job[0] for job in jobs if len(job) > 0]
+        return result
 
+    def heuristique_gloutonne(self, priority='SPT'):
         # Init : Determiner l'ensemble des tâches réalisables
-        task_per_mac=[]
+        task_per_mac = []
         for i in range(self.nb_machines):
-            task_per_mac +=[[]]
+            task_per_mac += [[]]
         print(task_per_mac)
         task_list = []
         for job in self.jobs:
@@ -166,11 +192,11 @@ class JobShop:
 
             while len(task_list) != 0:
                 duree = float('inf')
-                for ind,t in enumerate(task_list):
+                for ind, t in enumerate(task_list):
                     if t.duration < duree:
                         duree = t.duration
                         next_task = t
-                        ind_pop=ind
+                        ind_pop = ind
 
                 mac = next_task.machine
                 task_per_mac[mac].append(next_task)
@@ -178,23 +204,10 @@ class JobShop:
 
                 j = next_task.ijob
                 i = next_task.itask
-                if i < len(self.jobs[j])-1:
-                    task_list.append(self.jobs[j][i+1])
+                if i < len(self.jobs[j]) - 1:
+                    task_list.append(self.jobs[j][i + 1])
 
         return task_per_mac
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class Solution(Graphe):
@@ -214,14 +227,13 @@ class Solution(Graphe):
         s += problem.get_time_graphe()
         for machine in matrix:
             for i in range(1, len(machine)):
-                s.link((machine[i-1].node_name, machine[i].node_name), machine[i-1].duration)
+                s.link((machine[i - 1].node_name, machine[i].node_name), machine[i - 1].duration)
         return s
-
 
     def __str__(self):
         for job in self.problem.jobs:
             for task in job:
-                if(task.node_name != "stS" and task.node_name != "stF"):
+                if (task.node_name != "stS" and task.node_name != "stF"):
                     self.date_debut_tache(task.node_name)
         return str(self.starts)
 
@@ -308,7 +320,5 @@ def table(tab, lig_names):
     res = "╔" + "═" * (l_first_col + 2) + ("╤══" + "═" * l_col) * c + "╗\n" + "".join(
         ("║{:^" + str(l_first_col + 2) + "}" + "".join("│{:^" + str(l_col + 2) + "}" for _ in range(c)) + "║\n").format(
             *[lig_names[ligne]] + [str(a) for a in tab[ligne]]) for ligne in range(len(tab))) + "╚" + "═" * (
-                      l_first_col + 2) + ("╧══" + "═" * l_col) * c + "╝"
+                  l_first_col + 2) + ("╧══" + "═" * l_col) * c + "╝"
     return res
-
-

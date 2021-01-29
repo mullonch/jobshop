@@ -1,11 +1,13 @@
 from utils.JobShop import *
 
-
 js = JobShop()
-sol = Solution.from_ressource_matrix(js, [[Task(0,3,0,0), Task(0,2,1,1)],[Task(1,3,1,0), Task(1,2,0,1)], [Task(2,2,0,2), (Task(2,4,1,2))]])
+print(js.heuristique_gloutonne_2("SPT"))
+print(js.heuristique_gloutonne_2("LPT"))
+print(js.heuristique_gloutonne_2("SRPT"))
+print(js.heuristique_gloutonne_2("LRPT"))
+
+exit()
+sol = Solution.from_ressource_matrix(js, js.heuristique_gloutonne())
 print(sol)
 print(sol.is_realisable())
 print(sol.get_duration())
-
-results = js.heuristique_gloutonne()
-print(results)
