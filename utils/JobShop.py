@@ -3,7 +3,6 @@
 """
 from utils.Graphe import *
 
-
 class Task:
     """
         Structure permettant de représenter un noeuf de graphe de JobShop
@@ -17,10 +16,12 @@ class Task:
         self.node_name = Task.node_name(ijob, itask)
 
     def __repr__(self):
-        return "{m:" + str(self.machine) + ", d:" + str(self.duration) + "}"
+        return self.node_name
+        #return "{job:"+str(self.ijob)+","+"task:"+str(self.itask)+","+"m:" + str(self.machine) + ", d:" + str(self.duration) + "}"
 
     @staticmethod
     def node_name(ijob, itask):
+
         """
         :param ijob: identifiant du job dans lequel est la tâche
         :param itask: position de la tache dans le job (0 = première tache)
@@ -148,6 +149,52 @@ class JobShop:
         # TODO : faire un selecteur de solution potable
         return self.pick_first_solution()
 
+    def heuristique_gloutonne(self,priority = 'SPT'):
+
+        # Init : Determiner l'ensemble des tâches réalisables
+        task_per_mac=[]
+        for i in range(self.nb_machines):
+            task_per_mac +=[[]]
+        print(task_per_mac)
+        task_list = []
+        for job in self.jobs:
+            task_list += [job[0]]
+
+        # boucle
+
+        if priority == 'SPT':
+
+            while len(task_list) != 0:
+                duree = float('inf')
+                for ind,t in enumerate(task_list):
+                    if t.duration < duree:
+                        duree = t.duration
+                        next_task = t
+                        ind_pop=ind
+
+                mac = next_task.machine
+                task_per_mac[mac].append(next_task)
+                task_list.pop(ind_pop)
+
+                j = next_task.ijob
+                i = next_task.itask
+                if i < len(self.jobs[j])-1:
+                    task_list.append(self.jobs[j][i+1])
+
+        return task_per_mac
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class Solution(Graphe):
     def __init__(self, problem):
@@ -250,3 +297,5 @@ def table(tab, lig_names):
             *[lig_names[ligne]] + [str(a) for a in tab[ligne]]) for ligne in range(len(tab))) + "╚" + "═" * (
                       l_first_col + 2) + ("╧══" + "═" * l_col) * c + "╝"
     return res
+
+
