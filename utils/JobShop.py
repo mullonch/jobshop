@@ -181,7 +181,6 @@ class JobShop:
         task_per_mac = []
         for i in range(self.nb_machines):
             task_per_mac += [[]]
-        print(task_per_mac)
         task_list = []
         for job in self.jobs:
             task_list += [job[0]]

@@ -2,9 +2,7 @@ from utils.JobShop import *
 
 js = JobShop()
 print(js.heuristique_gloutonne_2("SPT"))
-print(js.heuristique_gloutonne_2("LPT"))
-print(js.heuristique_gloutonne_2("SRPT"))
-print(js.heuristique_gloutonne_2("LRPT"))
+print(js.heuristique_gloutonne("SPT"))
 
 exit()
 sol = Solution.from_ressource_matrix(js, js.heuristique_gloutonne())
