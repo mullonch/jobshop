@@ -149,27 +149,40 @@ class JobShop:
         return self.pick_first_solution()
 
 
+
 class Solution(Graphe):
     def __init__(self, problem):
         super().__init__()
         self.problem = problem
         self.starts = dict.fromkeys([task.node_name for job in self.problem.jobs for task in job])
 
+    @staticmethod
+    def from_ressource_matrix(problem, matrix):
+        """
+        :param problem: probleme de Jobshop
+        :param no_task: solution au problème donné sous la représentation en ressources (liste de liste de Task)
+        :return: Solution au problème donné (objet Solution)
+        """
+        s = Solution(problem)
+        s += problem.get_time_graphe()
+        for machine in matrix:
+            for i in range(1, len(machine)):
+                s.link((machine[i-1].node_name, machine[i].node_name), machine[i-1].duration)
+        return s
+
+
+    def __str__(self):
+        for job in self.problem.jobs:
+            for task in job:
+                if(task.node_name != "stS" and task.node_name != "stF"):
+                    self.date_debut_tache(task.node_name)
+        return str(self.starts)
+
     def is_realisable(self):
         """
         :return: Un booléen iniquant si la solution est réalisable (le graphe ne contient pas de cycle)
         """
         return not self.has_cycle()
-
-    def representation(self, mode):
-        if mode.lower == "gant":
-            return self.gant()
-        if mode.lower == "matrix":
-            return self.str_matrix()
-        if mode.lower == "ressources":
-            return self.str_ressource_matrix()
-        if mode.lower == "job":
-            return self.str_job_matrix()
 
     def matrix(self):
         return [[self.date_debut_tache(Task.node_name(ijob, itask)) for itask in range(self.problem.nb_machines)] for
