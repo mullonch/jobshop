@@ -5,7 +5,7 @@ import numpy as np
 class Graphe:
     def __init__(self, construction=[]):
         self.V = set()  # Noeuds
-        self.E = [] # Arretes
+        self.E = []  # Arretes
         for elem in construction:
             self.__add__(elem)
         # self.oriented=True
