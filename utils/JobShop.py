@@ -9,6 +9,7 @@ class Task:
     """
         Structure permettant de représenter un noeuf de graphe de JobShop
     """
+
     def __init__(self, machine, duration, ijob, itask):
         self.machine = machine
         self.duration = duration
@@ -21,6 +22,7 @@ class Task:
     @property
     def nodename(self):
         return "st(" + str(self.ijob) + ", " + str(self.itask) + ")"
+
 
 class JobShop:
     """
@@ -37,7 +39,7 @@ class JobShop:
         lines = [[int(a) for a in filter(None, line.split(" "))] for line in open(filename, "r").read().split("\n") if
                  line != "" and line[0] != "#"]
         self.nb_jobs, self.nb_machines = lines.pop(0)
-        #TODO : améliorer les 6 lignes ci-dessous (possibles de le faire sans stockage du res. de la dissociation des lignes)
+        # TODO : améliorer les 6 lignes ci-dessous (possibles de le faire sans stockage du res. de la dissociation des lignes)
         machines = [[job[i] for i in range(len(job)) if not i % 2] for job in lines]
         durations = [[job[i] for i in range(len(job)) if i % 2] for job in lines]
         self.jobs = []
@@ -125,7 +127,6 @@ class JobShop:
                 res[imac].link((t2.nodename, t1.nodename), cost=t2.duration)
         return res
 
-
     def pick_first_solution(self):
         # TODO faire mieux que ça
         solution = Solution(self)
@@ -145,7 +146,7 @@ class JobShop:
         solution.link(("st(0, 2)", "st(1, 2)"), 2)
         return solution
 
-    def heuristique_gloutonne_2(self, strategy="SPT"):
+    def heuristique_gloutonne(self, strategy="SPT"):
         """
         :param strategy: chaine de caractère définissant la stratégie de choix :
         SPT : Shortest Processing Time
@@ -171,44 +172,17 @@ class JobShop:
             realisables = [job[0] for job in jobs if len(job) > 0]
         return Solution.from_ressource_matrix(self, result)
 
-    def heuristique_gloutonne(self, priority='SPT'):
-        # Init : Determiner l'ensemble des tâches réalisables
-        task_per_mac = []
-        for i in range(self.nb_machines):
-            task_per_mac += [[]]
-        task_list = []
-        for job in self.jobs:
-            task_list += [job[0]]
-
-        # boucle
-
-        if priority == 'SPT':
-
-            while len(task_list) != 0:
-                duree = float('inf')
-                for ind, t in enumerate(task_list):
-                    if t.duration < duree:
-                        duree = t.duration
-                        next_task = t
-                        ind_pop = ind
-
-                mac = next_task.machine
-                task_per_mac[mac].append(next_task)
-                task_list.pop(ind_pop)
-
-                j = next_task.ijob
-                i = next_task.itask
-                if i < len(self.jobs[j]) - 1:
-                    task_list.append(self.jobs[j][i + 1])
-
-        return task_per_mac
-
 
 class Solution(Graphe):
     def __init__(self, problem):
         super().__init__()
         self.problem = problem
-        self.starts = dict.fromkeys([task.nodename for job in self.problem.jobs for task in job])
+
+    def init_starts(self):
+        self.starts = dict.fromkeys(self.V, 0)
+        for node in self.topological_list():
+            self.starts[node] = max(
+                [self.starts[node]] + [self.starts[p] + self.get_cost(p, node) for p in self.get_incomings(node)])
 
     @staticmethod
     def from_ressource_matrix(problem, matrix):
@@ -243,7 +217,8 @@ class Solution(Graphe):
 
     @property
     def str_matrix(self):
-        return table([list(range(self.problem.nb_machines))] + self.matrix(), ["num_colonne"] + ["Job " + str(i) for i in range(self.problem.nb_jobs)])
+        return table([list(range(self.problem.nb_machines))] + self.matrix,
+                     ["num_colonne"] + ["Job " + str(i) for i in range(self.problem.nb_jobs)])
 
     @property
     def ressource_matrix(self):
@@ -257,7 +232,7 @@ class Solution(Graphe):
 
     @property
     def str_ressource_matrix(self):
-        return table(self.ressource_matrix(), ["r" + str(i) for i in range(self.problem.nb_machines)])
+        return table(self.ressource_matrix, ["r" + str(i) for i in range(self.problem.nb_machines)])
 
     @property
     def job_matrix(self):
@@ -269,7 +244,7 @@ class Solution(Graphe):
 
     @property
     def str_job_matrix(self):
-        return table([self.job_matrix()], ["num job"])
+        return table([self.job_matrix], ["num job"])
 
     @property
     def gant(self):
@@ -291,14 +266,15 @@ class Solution(Graphe):
 
     def gant_2(self):
         res = "DIAGRAMME DE GANT : \n"
-        
 
     def date_debut_tache(self, task_name):
         if self.starts[task_name] is None:
-            self.starts[task_name] = self.longest_path_length("stS", task_name)
+            self.init_starts()
+            # self.starts[task_name] = self.longest_path_length("stS", task_name)
         return self.starts[task_name]
 
     def longest_path_length(self, node_from, node_to):
+        # TODO : refaire ça différement (bruteforce dégueulasse)
         if self.has_cycle():
             return float("inf")
         if node_from == node_to:
@@ -313,7 +289,7 @@ class Solution(Graphe):
 
     @property
     def duration(self):
-        return self.longest_path_length("stS", "stF")
+        return self.date_debut_tache("stF")
 
 
 def table(tab, lig_names):
