@@ -6,7 +6,7 @@ js = JobShop()
 #print(sol.is_realisable())
 #print(sol.get_duration())
 
-results = js.heuristique_gloutonne_2(strategy='EST_LRPT')
+results = js.heuristique_gloutonne(strategy='EST_LRPT')
 print(results)
 print(results.gant)
 print(results.duration)
