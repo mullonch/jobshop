@@ -84,6 +84,10 @@ class JobShop:
         """
         return self.jobs[id_job][no_task]
 
+    def get_task_by_nodename(self, nodename):
+        infos = nodename.split(", ")
+        return self.get_task(int(infos[0][3:]), int(infos[1][:-1]))
+
     def get_time_graphe(self):
         res = Graphe()
         res += ["stS", "stF"]
@@ -216,6 +220,27 @@ class Solution(Graphe):
         for node in self.topological_list():
             self.starts[node] = max(
                 [self.starts[node]] + [self.starts[p] + self.get_cost(p, node) for p in self.get_incomings(node)])
+
+    def blocks_of_critical_path(self):
+        crit_orig = dict.fromkeys(self.V, 0)
+        starts = dict.fromkeys(self.V, 0)
+        for ne in self.get_neighbors("stS"):
+            crit_orig[ne] = "stS"
+
+        for node in self.topological_list():
+            for p in self.get_incomings(node):
+                if starts[p] + self.get_cost(p, node) > starts[node]:
+                    starts[node] = starts[p] + self.get_cost(p, node)
+                    crit_orig[node] = p
+        result = ['stF']
+        while result[0] != 'stS':
+            result = [crit_orig[result[0]]] + result
+        return result
+
+    def inv_blocks_of_critical_path(self):
+        tasks = [self.problem.get_task_by_nodename(node) for node in self.blocks_of_critical_path()[1:-1]]
+        return [(tasks[i-1], tasks[i]) for i in range(1, len(tasks)) if tasks[i-1].machine == tasks[i].machine]
+
 
     @staticmethod
     def from_ressource_matrix(problem, matrix):
