@@ -202,7 +202,10 @@ class JobShop:
 
 
         return Solution.from_ressource_matrix(self, result)
-
+       
+    def descente(self):
+        sol = Solution(self)
+        
 class Solution(Graphe):
     def __init__(self, problem):
         super().__init__()
@@ -315,6 +318,38 @@ class Solution(Graphe):
     def duration(self):
         return self.date_debut_tache("stF")
 
+
+
+    def new_neighbors(self,list_permutables):
+        
+        list_solutions = []
+        
+        #list_permutables = [[O9,O1,O6],[O15,O16]]
+        for ind1,sub_list in enumerate(list_permutables):
+            permutables = [(i-1, i) for i in range(1, len(sub_list))]
+            #permutables = [('O9','O1'),('O1','O6']]
+            
+            for ind2,perm in enumerate(permutables):
+                #ind2 = 0 , perm = ('09','01')
+                #ind2 = 1 , perm = ('01','06')
+                new_sol = deepcopy(self)
+                new_sol.unlink(list_permutables[ind1])
+                
+                new_sol.link(perm[1],perm[0], cost = self.get_cost(node_from = perm[1], node_to = perm[0]))
+                if len(permutables)>1:
+                    
+                    if ind2 < len(permutables):
+                        #from current to next edge in list
+                        new_sol.link(perm[0],permutables[ind2+1][1], cost = self.get_cost(node_from = perm[0], node_to = permutables[ind2+1][1]))
+                        
+                    if ind2>0:
+                        #from current to previous in list
+                        new_sol.link(permutables[ind2-1][1],perm[1], cost = self.get_cost(node_from = permutables[ind2-1][1], node_to = perm[1]))
+                list_solutions+=[new_sol]
+                        
+                        
+        return list_solutions
+        
 
 def table(tab, lig_names):
     l_first_col = max(len(a) for a in lig_names)
