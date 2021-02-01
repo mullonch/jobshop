@@ -229,10 +229,8 @@ class Solution(Graphe):
         return s
 
     def __str__(self):
-        for job in self.problem.jobs:
-            for task in job:
-                if task.nodename != "stS" and task.nodename != "stF":
-                    self.date_debut_tache(task.nodename)
+        if not hasattr(self, 'starts'):
+            self.init_starts()
         return str(self.starts)
 
     def is_realisable(self):

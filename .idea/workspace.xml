@@ -4,6 +4,10 @@
     <list default="true" id="111b75dd-1248-4e98-8de5-642e3a47ce1b" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+<<<<<<< HEAD
+=======
+      <change beforePath="$PROJECT_DIR$/utils/JobShop.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/JobShop.py" afterDir="false" />
+>>>>>>> 728e5d53d9294cdc4a34d6174307c441a9dc3920
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -20,9 +24,14 @@
   </component>
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+<<<<<<< HEAD
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+=======
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/main.py" />
+    <property name="settings.editor.selected.configurable" value="preferences.keymap" />
+>>>>>>> 728e5d53d9294cdc4a34d6174307c441a9dc3920
   </component>
   <component name="RunManager">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
@@ -92,23 +101,27 @@
       <screen x="0" y="0" width="2560" height="1080" />
     </state>
     <state x="548" y="179" key="FileChooserDialogImpl/0.0.1536.824@0.0.1536.824" timestamp="1611918777281" />
+<<<<<<< HEAD
     <state x="913" y="235" key="FileChooserDialogImpl/0.0.2560.1080@0.0.2560.1080" timestamp="1612184550530" />
     <state width="1515" height="261" key="GridCell.Tab.0.bottom" timestamp="1612177921990">
+=======
+    <state width="1515" height="300" key="GridCell.Tab.0.bottom" timestamp="1612185553163">
+>>>>>>> 728e5d53d9294cdc4a34d6174307c441a9dc3920
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1515" height="261" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1612177921990" />
-    <state width="1515" height="261" key="GridCell.Tab.0.center" timestamp="1612177921990">
+    <state width="1515" height="300" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1612185553163" />
+    <state width="1515" height="300" key="GridCell.Tab.0.center" timestamp="1612185553162">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1515" height="261" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1612177921990" />
-    <state width="1515" height="261" key="GridCell.Tab.0.left" timestamp="1612177921990">
+    <state width="1515" height="300" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1612185553162" />
+    <state width="1515" height="300" key="GridCell.Tab.0.left" timestamp="1612185553162">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1515" height="261" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1612177921990" />
-    <state width="1515" height="261" key="GridCell.Tab.0.right" timestamp="1612177921990">
+    <state width="1515" height="300" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1612185553162" />
+    <state width="1515" height="300" key="GridCell.Tab.0.right" timestamp="1612185553163">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1515" height="261" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1612177921990" />
+    <state width="1515" height="300" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1612185553163" />
     <state width="1515" height="261" key="GridCell.Tab.1.bottom" timestamp="1612177921991">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
