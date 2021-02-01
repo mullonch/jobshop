@@ -9,7 +9,6 @@ class Task:
     """
         Structure permettant de représenter un noeuf de graphe de JobShop
     """
-
     def __init__(self, machine, duration, ijob, itask):
         self.machine = machine
         self.duration = duration
@@ -22,7 +21,6 @@ class Task:
     @property
     def nodename(self):
         return "st(" + str(self.ijob) + ", " + str(self.itask) + ")"
-
 
 class JobShop:
     """
@@ -115,17 +113,7 @@ class JobShop:
             for t1, t2 in itertools.combinations(tasks, 2):
                 res[imac].link((t1.nodename, t2.nodename), cost=t1.duration)
                 res[imac].link((t2.nodename, t1.nodename), cost=t2.duration)
-        return res
 
-    def get_ressources_graphes_2(self):
-        res = [Graphe() for _ in range(self.nb_machines)]
-        for imac in range(self.nb_machines):
-            tasks = self.get_tasks_by_machine(imac)
-            res[imac] += [task.nodename for task in tasks]
-            for t1, t2 in itertools.combinations(tasks, 2):
-                res[imac].link((t1.nodename, t2.nodename), cost=t1.duration)
-                res[imac].link((t2.nodename, t1.nodename), cost=t2.duration)
-        return res
 
     def pick_first_solution(self):
         # TODO faire mieux que ça
@@ -158,6 +146,33 @@ class JobShop:
         result = [[] for _ in range(self.nb_machines)]
         jobs = deepcopy(self.jobs)
         realisables = [job[0] for job in jobs]
+
+        dmac = [0 for _ in range(self.nb_machines)]
+        djob = [0 for _ in range(self.nb_jobs)]
+
+        def EST_STP(realisables):
+
+            start_dates =[0 for _ in range(len(realisables))]
+
+            possible_next_tasks = []
+
+            for ind,task in enumerate(realisables):
+                start_dates[ind] = max(djob[task.ijob],dmac[task.machine])
+
+
+            for ind,task in enumerate(realisables):
+                if start_dates[ind] == min(start_dates):
+                    possible_next_tasks+=[task]
+
+
+
+            if len(possible_next_tasks)>1:
+                next_task = selectors[strategy[4:]](possible_next_tasks)
+            else:
+                next_task = possible_next_tasks[0]
+
+            return next_task
+
         selectors = {
             "SPT": lambda x: next(a for a in x if a.duration == min(a.duration for a in x)),
             "LPT": lambda x: next(a for a in x if a.duration == max(a.duration for a in x)),
@@ -166,12 +181,27 @@ class JobShop:
             "LRPT": lambda x: next(a for a in x if sum(t.duration for t in jobs[a.ijob]) == max(
                 sum(a.duration for a in j) for j in jobs if len(j) > 0))
         }
+
+
         while len(realisables) > 0:
-            next_task = selectors[strategy](realisables)
+
+            if strategy[:4] == 'EST_':
+                next_task = EST_STP(realisables)
+
+
+                end = next_task.duration+max(djob[next_task.ijob],dmac[next_task.machine])
+                dmac[next_task.machine] = end
+                djob[next_task.ijob] = end
+
+            else:
+                next_task = selectors[strategy](realisables)
+
             result[next_task.machine].append(jobs[next_task.ijob].pop(0))
             realisables = [job[0] for job in jobs if len(job) > 0]
-        return Solution.from_ressource_matrix(self, result)
 
+
+
+        return Solution.from_ressource_matrix(self, result)
 
 class Solution(Graphe):
     def __init__(self, problem):
@@ -217,8 +247,7 @@ class Solution(Graphe):
 
     @property
     def str_matrix(self):
-        return table([list(range(self.problem.nb_machines))] + self.matrix,
-                     ["num_colonne"] + ["Job " + str(i) for i in range(self.problem.nb_jobs)])
+        return table([list(range(self.problem.nb_machines))] + self.matrix(), ["num_colonne"] + ["Job " + str(i) for i in range(self.problem.nb_jobs)])
 
     @property
     def ressource_matrix(self):
@@ -263,9 +292,6 @@ class Solution(Graphe):
                 actual_position += task[0].duration + diff
             res += str_machine + "\n"
         return res
-
-    def gant_2(self):
-        res = "DIAGRAMME DE GANT : \n"
 
     def date_debut_tache(self, task_name):
         if self.starts[task_name] is None:
