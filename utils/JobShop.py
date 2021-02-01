@@ -1,34 +1,26 @@
 """
     Module permettant de matérialiser des problèmes de JobShop
 """
+from copy import deepcopy
 from utils.Graphe import *
+
 
 class Task:
     """
         Structure permettant de représenter un noeuf de graphe de JobShop
     """
-
     def __init__(self, machine, duration, ijob, itask):
         self.machine = machine
         self.duration = duration
         self.ijob = ijob
         self.itask = itask
-        self.node_name = Task.node_name(ijob, itask)
 
     def __repr__(self):
-        return self.node_name
-        #return "{job:"+str(self.ijob)+","+"task:"+str(self.itask)+","+"m:" + str(self.machine) + ", d:" + str(self.duration) + "}"
+        return self.nodename
 
-    @staticmethod
-    def node_name(ijob, itask):
-
-        """
-        :param ijob: identifiant du job dans lequel est la tâche
-        :param itask: position de la tache dans le job (0 = première tache)
-        :return: nom du noeud du graphe correspondant à la tache
-        """
-        return "st(" + str(ijob) + ", " + str(itask) + ")"
-
+    @property
+    def nodename(self):
+        return "st(" + str(self.ijob) + ", " + str(self.itask) + ")"
 
 class JobShop:
     """
@@ -45,8 +37,9 @@ class JobShop:
         lines = [[int(a) for a in filter(None, line.split(" "))] for line in open(filename, "r").read().split("\n") if
                  line != "" and line[0] != "#"]
         self.nb_jobs, self.nb_machines = lines.pop(0)
-        machines = [[task[i] for i in range(len(task)) if not i % 2] for task in lines]
-        durations = [[task[i] for i in range(len(task)) if i % 2] for task in lines]
+        #TODO : améliorer les 6 lignes ci-dessous (possibles de le faire sans stockage du res. de la dissociation des lignes)
+        machines = [[job[i] for i in range(len(job)) if not i % 2] for job in lines]
+        durations = [[job[i] for i in range(len(job)) if i % 2] for job in lines]
         self.jobs = []
         for j in range(self.nb_jobs):
             self.jobs.append([Task(machines[j][i] - 1, durations[j][i], j, i) for i in range(self.nb_machines)])
@@ -92,20 +85,16 @@ class JobShop:
         return self.jobs[id_job][no_task]
 
     def get_time_graphe(self):
-        """
-        :return: Un objet Graphe représentant les contraintes temporelles du problème.
-        """
-        g = Graphe()
-        g += ["stS", "stF"]
-        for ijob in range(self.nb_jobs):
-            prec = "stF"
-            for itask in range(self.nb_machines, 0, -1):
-                node_name = Task.node_name(ijob, itask - 1)
-                g += node_name
-                g.link((node_name, prec), cost=self.get_task(ijob, itask - 1).duration)
-                prec = node_name
-            g.link(("stS", prec))
-        return g
+        res = Graphe()
+        res += ["stS", "stF"]
+        for job in self.jobs:
+            prec = ("stS", 0)
+            for task in job:
+                res += task.nodename
+                res.link((prec[0], task.nodename), prec[1])
+                prec = (task.nodename, task.duration)
+            res.link((prec[0], "stF"), prec[1])
+        return res
 
     def get_graphe(self):
         """
@@ -120,11 +109,22 @@ class JobShop:
         res = [Graphe() for _ in range(self.nb_machines)]
         for imac in range(self.nb_machines):
             tasks = self.get_tasks_by_machine(imac)
-            res[imac] += [task.node_name for task in tasks]
+            res[imac] += [task.nodename for task in tasks]
             for t1, t2 in itertools.combinations(tasks, 2):
-                res[imac].link((t1.node_name, t2.node_name), cost=t1.duration)
-                res[imac].link((t2.node_name, t1.node_name), cost=t2.duration)
+                res[imac].link((t1.nodename, t2.nodename), cost=t1.duration)
+                res[imac].link((t2.nodename, t1.nodename), cost=t2.duration)
         return res
+
+    def get_ressources_graphes_2(self):
+        res = [Graphe() for _ in range(self.nb_machines)]
+        for imac in range(self.nb_machines):
+            tasks = self.get_tasks_by_machine(imac)
+            res[imac] += [task.nodename for task in tasks]
+            for t1, t2 in itertools.combinations(tasks, 2):
+                res[imac].link((t1.nodename, t2.nodename), cost=t1.duration)
+                res[imac].link((t2.nodename, t1.nodename), cost=t2.duration)
+        return res
+
 
     def pick_first_solution(self):
         # TODO faire mieux que ça
@@ -134,7 +134,7 @@ class JobShop:
             solution += next(iter(g.E))
         return solution
 
-    def pick_mf_solution(self):
+    def pick_default_solution(self):
         """
         :return: pour le pb par défaut, renvoie la solution vue en cours (makespan 12)
         """
@@ -145,54 +145,76 @@ class JobShop:
         solution.link(("st(0, 2)", "st(1, 2)"), 2)
         return solution
 
-    def pick_solution(self):
-        # TODO : faire un selecteur de solution potable
-        return self.pick_first_solution()
+    def heuristique_gloutonne_2(self, strategy="SPT"):
+        """
+        :param strategy: chaine de caractère définissant la stratégie de choix :
+        SPT : Shortest Processing Time
+        LPT : Longest Processing Time
+        SRPT : Shortest Remaining Processing Time
+        LRPT : Longest Remaining Processing Time
+        :return:
+        """
+        result = [[] for _ in range(self.nb_machines)]
+        jobs = deepcopy(self.jobs)
+        realisables = [job[0] for job in jobs]
 
-    def heuristique_gloutonne(self,priority = 'SPT'):
+        dmac = [0 for _ in range(self.nb_machines)]
+        djob = [0 for _ in range(self.nb_jobs)]
 
-        # Init : Determiner l'ensemble des tâches réalisables
-        task_per_mac=[]
-        for i in range(self.nb_machines):
-            task_per_mac +=[[]]
-        print(task_per_mac)
-        task_list = []
-        for job in self.jobs:
-            task_list += [job[0]]
+        def EST_STP(realisables):
 
-        # boucle
+            start_dates =[0 for _ in range(len(realisables))]
 
-        if priority == 'SPT':
+            possible_next_tasks = []
 
-            while len(task_list) != 0:
-                duree = float('inf')
-                for ind,t in enumerate(task_list):
-                    if t.duration < duree:
-                        duree = t.duration
-                        next_task = t
-                        ind_pop=ind
+            for ind,task in enumerate(realisables):
+                start_dates[ind] = max(djob[task.ijob],dmac[task.machine])
 
-                mac = next_task.machine
-                task_per_mac[mac].append(next_task)
-                task_list.pop(ind_pop)
 
-                j = next_task.ijob
-                i = next_task.itask
-                if i < len(self.jobs[j])-1:
-                    task_list.append(self.jobs[j][i+1])
-
-        return task_per_mac
+            for ind,task in enumerate(realisables):
+                if start_dates[ind] == min(start_dates):
+                    possible_next_tasks+=[task]
 
 
 
+            if len(possible_next_tasks)>1:
+                next_task = selectors[strategy[4:]](possible_next_tasks)
+            else:
+                next_task = possible_next_tasks[0]
+
+            return next_task
+
+
+        selectors = {
+            "SPT": lambda x: next(a for a in x if a.duration == min(a.duration for a in x)),
+            "LPT": lambda x: next(a for a in x if a.duration == max(a.duration for a in x)),
+            "SRPT": lambda x: next(a for a in x if sum(t.duration for t in jobs[a.ijob]) == min(
+                sum(a.duration for a in j) for j in jobs if len(j) > 0)),
+            "LRPT": lambda x: next(a for a in x if sum(t.duration for t in jobs[a.ijob]) == max(
+                sum(a.duration for a in j) for j in jobs if len(j) > 0))
+
+        }
+
+
+        while len(realisables) > 0:
+
+            if strategy[:4] == 'EST_':
+                next_task = EST_STP(realisables)
+
+
+                end = next_task.duration+max(djob[next_task.ijob],dmac[next_task.machine])
+                dmac[next_task.machine] = end
+                djob[next_task.ijob] = end
+
+            else:
+                next_task = selectors[strategy](realisables)
+
+            result[next_task.machine].append(jobs[next_task.ijob].pop(0))
+            realisables = [job[0] for job in jobs if len(job) > 0]
 
 
 
-
-
-
-
-
+        return Solution.from_ressource_matrix(self, result)
 
 
 
@@ -201,28 +223,27 @@ class Solution(Graphe):
     def __init__(self, problem):
         super().__init__()
         self.problem = problem
-        self.starts = dict.fromkeys([task.node_name for job in self.problem.jobs for task in job])
+        self.starts = dict.fromkeys([task.nodename for job in self.problem.jobs for task in job])
 
     @staticmethod
     def from_ressource_matrix(problem, matrix):
         """
         :param problem: probleme de Jobshop
-        :param no_task: solution au problème donné sous la représentation en ressources (liste de liste de Task)
+        :param matrix: solution au problème donné sous la représentation en ressources (liste de liste de Task)
         :return: Solution au problème donné (objet Solution)
         """
         s = Solution(problem)
         s += problem.get_time_graphe()
         for machine in matrix:
             for i in range(1, len(machine)):
-                s.link((machine[i-1].node_name, machine[i].node_name), machine[i-1].duration)
+                s.link((machine[i - 1].nodename, machine[i].nodename), machine[i - 1].duration)
         return s
-
 
     def __str__(self):
         for job in self.problem.jobs:
             for task in job:
-                if(task.node_name != "stS" and task.node_name != "stF"):
-                    self.date_debut_tache(task.node_name)
+                if task.nodename != "stS" and task.nodename != "stF":
+                    self.date_debut_tache(task.nodename)
         return str(self.starts)
 
     def is_realisable(self):
@@ -231,27 +252,29 @@ class Solution(Graphe):
         """
         return not self.has_cycle()
 
+    @property
     def matrix(self):
-        return [[self.date_debut_tache(Task.node_name(ijob, itask)) for itask in range(self.problem.nb_machines)] for
-                ijob in range(self.problem.nb_jobs)]
+        return [[self.date_debut_tache(task.nodename) for task in job] for job in self.problem.jobs]
 
+    @property
     def str_matrix(self):
-        tab = [list(range(self.problem.nb_machines))] + self.matrix()
-        fcol = ["num_colonne"] + ["Job " + str(i) for i in range(self.problem.nb_jobs)]
-        return table(tab, fcol)
+        return table([list(range(self.problem.nb_machines))] + self.matrix(), ["num_colonne"] + ["Job " + str(i) for i in range(self.problem.nb_jobs)])
 
+    @property
     def ressource_matrix(self):
         # TODO optimiser cette merde
         res = []
         for imac in range(self.problem.nb_machines):
-            tasks = [task.node_name for task in self.problem.get_tasks_by_machine(imac)]
+            tasks = [task.nodename for task in self.problem.get_tasks_by_machine(imac)]
             tasks.sort(key=lambda x: self.date_debut_tache(x))
             res.append(tasks)
         return res
 
+    @property
     def str_ressource_matrix(self):
         return table(self.ressource_matrix(), ["r" + str(i) for i in range(self.problem.nb_machines)])
 
+    @property
     def job_matrix(self):
         # TODO : revoir ça (ça marche mais c'est moyen)
         # TODO : rentre cet algorithme stable (de préférence)
@@ -259,14 +282,16 @@ class Solution(Graphe):
         tasks.sort(key=lambda x: self.date_debut_tache(x))
         return [t[3] for t in tasks]
 
+    @property
     def str_job_matrix(self):
         return table([self.job_matrix()], ["num job"])
 
+    @property
     def gant(self):
         # TODO : Optimiser cette merde dégueulasse
         res = "DIAGRAMME DE GANT : \n"
         for imac in range(self.problem.nb_machines):
-            tbm = [[(task, self.date_debut_tache(task.node_name)) for task in job if task.machine == imac][0] for job in
+            tbm = [[(task, self.date_debut_tache(task.nodename)) for task in job if task.machine == imac][0] for job in
                    self.problem.jobs]
             tbm.sort(key=lambda x: x[1])
             str_machine = "Mac n°" + str(imac) + " : "
@@ -278,6 +303,10 @@ class Solution(Graphe):
                 actual_position += task[0].duration + diff
             res += str_machine + "\n"
         return res
+
+    def gant_2(self):
+        res = "DIAGRAMME DE GANT : \n"
+
 
     def date_debut_tache(self, task_name):
         if self.starts[task_name] is None:
@@ -297,7 +326,8 @@ class Solution(Graphe):
         else:
             return max(chemins_possibles)
 
-    def get_duration(self):
+    @property
+    def duration(self):
         return self.longest_path_length("stS", "stF")
 
 
@@ -308,7 +338,5 @@ def table(tab, lig_names):
     res = "╔" + "═" * (l_first_col + 2) + ("╤══" + "═" * l_col) * c + "╗\n" + "".join(
         ("║{:^" + str(l_first_col + 2) + "}" + "".join("│{:^" + str(l_col + 2) + "}" for _ in range(c)) + "║\n").format(
             *[lig_names[ligne]] + [str(a) for a in tab[ligne]]) for ligne in range(len(tab))) + "╚" + "═" * (
-                      l_first_col + 2) + ("╧══" + "═" * l_col) * c + "╝"
+                  l_first_col + 2) + ("╧══" + "═" * l_col) * c + "╝"
     return res
-
-
