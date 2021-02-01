@@ -214,6 +214,9 @@ class Solution(Graphe):
             self.starts[node] = max(
                 [self.starts[node]] + [self.starts[p] + self.get_cost(p, node) for p in self.get_incomings(node)])
 
+    def blocks_of_critical_path(self):
+        pass
+
     @staticmethod
     def from_ressource_matrix(problem, matrix):
         """

@@ -80,6 +80,15 @@ class Graphe:
     def add(self, elem):
         self.__add__(elem)
 
+    def remove_edge(self, node_from, node_to):
+        to_remove = [edge for edge in self.E if edge.node_from == node_from and edge.node_to == node_to]
+        for edge in to_remove:
+            self.E.remove(edge)
+
+    def unlink(self, node_list):
+        for i in range(1, len(node_list)):
+            self.remove_edge(node_list[i-1], node_list[i])
+
     def link(self, node_list, cost=0, oriented=True):
         self.__add__(node_list)
         for i in range(1, len(node_list)):
