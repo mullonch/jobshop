@@ -155,7 +155,9 @@ class Graphe:
         s = set([node for node in self.V if len(self.get_incomings(node)) == 0])
         while len(s) > 0:
             n = s.pop()
-            res += [n]
+            if n in res:
+                res.remove(n)
+            res.append(n)
             for m in self.get_neighbors(n):
                 s.add(m)
         return res

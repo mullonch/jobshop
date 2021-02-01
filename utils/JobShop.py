@@ -37,7 +37,7 @@ class JobShop:
         lines = [[int(a) for a in filter(None, line.split(" "))] for line in open(filename, "r").read().split("\n") if
                  line != "" and line[0] != "#"]
         self.nb_jobs, self.nb_machines = lines.pop(0)
-        #TODO : améliorer les 6 lignes ci-dessous (possibles de le faire sans stockage du res. de la dissociation des lignes)
+        # TODO : améliorer les 6 lignes ci-dessous (possibles de le faire sans stockage du res. de la dissociation des lignes)
         machines = [[job[i] for i in range(len(job)) if not i % 2] for job in lines]
         durations = [[job[i] for i in range(len(job)) if i % 2] for job in lines]
         self.jobs = []
@@ -113,17 +113,6 @@ class JobShop:
             for t1, t2 in itertools.combinations(tasks, 2):
                 res[imac].link((t1.nodename, t2.nodename), cost=t1.duration)
                 res[imac].link((t2.nodename, t1.nodename), cost=t2.duration)
-        return res
-
-    def get_ressources_graphes_2(self):
-        res = [Graphe() for _ in range(self.nb_machines)]
-        for imac in range(self.nb_machines):
-            tasks = self.get_tasks_by_machine(imac)
-            res[imac] += [task.nodename for task in tasks]
-            for t1, t2 in itertools.combinations(tasks, 2):
-                res[imac].link((t1.nodename, t2.nodename), cost=t1.duration)
-                res[imac].link((t2.nodename, t1.nodename), cost=t2.duration)
-        return res
 
 
     def pick_first_solution(self):
@@ -145,7 +134,7 @@ class JobShop:
         solution.link(("st(0, 2)", "st(1, 2)"), 2)
         return solution
 
-    def heuristique_gloutonne_2(self, strategy="SPT"):
+    def heuristique_gloutonne(self, strategy="SPT"):
         """
         :param strategy: chaine de caractère définissant la stratégie de choix :
         SPT : Shortest Processing Time
@@ -184,7 +173,6 @@ class JobShop:
 
             return next_task
 
-
         selectors = {
             "SPT": lambda x: next(a for a in x if a.duration == min(a.duration for a in x)),
             "LPT": lambda x: next(a for a in x if a.duration == max(a.duration for a in x)),
@@ -192,7 +180,6 @@ class JobShop:
                 sum(a.duration for a in j) for j in jobs if len(j) > 0)),
             "LRPT": lambda x: next(a for a in x if sum(t.duration for t in jobs[a.ijob]) == max(
                 sum(a.duration for a in j) for j in jobs if len(j) > 0))
-
         }
 
 
@@ -216,14 +203,16 @@ class JobShop:
 
         return Solution.from_ressource_matrix(self, result)
 
-
-
-
 class Solution(Graphe):
     def __init__(self, problem):
         super().__init__()
         self.problem = problem
-        self.starts = dict.fromkeys([task.nodename for job in self.problem.jobs for task in job])
+
+    def init_starts(self):
+        self.starts = dict.fromkeys(self.V, 0)
+        for node in self.topological_list():
+            self.starts[node] = max(
+                [self.starts[node]] + [self.starts[p] + self.get_cost(p, node) for p in self.get_incomings(node)])
 
     @staticmethod
     def from_ressource_matrix(problem, matrix):
@@ -272,7 +261,7 @@ class Solution(Graphe):
 
     @property
     def str_ressource_matrix(self):
-        return table(self.ressource_matrix(), ["r" + str(i) for i in range(self.problem.nb_machines)])
+        return table(self.ressource_matrix, ["r" + str(i) for i in range(self.problem.nb_machines)])
 
     @property
     def job_matrix(self):
@@ -284,7 +273,7 @@ class Solution(Graphe):
 
     @property
     def str_job_matrix(self):
-        return table([self.job_matrix()], ["num job"])
+        return table([self.job_matrix], ["num job"])
 
     @property
     def gant(self):
@@ -304,16 +293,14 @@ class Solution(Graphe):
             res += str_machine + "\n"
         return res
 
-    def gant_2(self):
-        res = "DIAGRAMME DE GANT : \n"
-
-
     def date_debut_tache(self, task_name):
         if self.starts[task_name] is None:
-            self.starts[task_name] = self.longest_path_length("stS", task_name)
+            self.init_starts()
+            # self.starts[task_name] = self.longest_path_length("stS", task_name)
         return self.starts[task_name]
 
     def longest_path_length(self, node_from, node_to):
+        # TODO : refaire ça différement (bruteforce dégueulasse)
         if self.has_cycle():
             return float("inf")
         if node_from == node_to:
@@ -328,7 +315,7 @@ class Solution(Graphe):
 
     @property
     def duration(self):
-        return self.longest_path_length("stS", "stF")
+        return self.date_debut_tache("stF")
 
 
 def table(tab, lig_names):
