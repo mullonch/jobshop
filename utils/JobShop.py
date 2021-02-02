@@ -9,6 +9,7 @@ class Task:
     """
         Structure permettant de représenter un noeuf de graphe de JobShop
     """
+
     def __init__(self, machine, duration, ijob, itask):
         self.machine = machine
         self.duration = duration
@@ -21,6 +22,7 @@ class Task:
     @property
     def nodename(self):
         return "st(" + str(self.ijob) + ", " + str(self.itask) + ")"
+
 
 class JobShop:
     """
@@ -118,7 +120,6 @@ class JobShop:
                 res[imac].link((t1.nodename, t2.nodename), cost=t1.duration)
                 res[imac].link((t2.nodename, t1.nodename), cost=t2.duration)
 
-
     def pick_first_solution(self):
         # TODO faire mieux que ça
         solution = Solution(self)
@@ -156,21 +157,18 @@ class JobShop:
 
         def EST_STP(realisables):
 
-            start_dates =[0 for _ in range(len(realisables))]
+            start_dates = [0 for _ in range(len(realisables))]
 
             possible_next_tasks = []
 
-            for ind,task in enumerate(realisables):
-                start_dates[ind] = max(djob[task.ijob],dmac[task.machine])
+            for ind, task in enumerate(realisables):
+                start_dates[ind] = max(djob[task.ijob], dmac[task.machine])
 
-
-            for ind,task in enumerate(realisables):
+            for ind, task in enumerate(realisables):
                 if start_dates[ind] == min(start_dates):
-                    possible_next_tasks+=[task]
+                    possible_next_tasks += [task]
 
-
-
-            if len(possible_next_tasks)>1:
+            if len(possible_next_tasks) > 1:
                 next_task = selectors[strategy[4:]](possible_next_tasks)
             else:
                 next_task = possible_next_tasks[0]
@@ -186,14 +184,12 @@ class JobShop:
                 sum(a.duration for a in j) for j in jobs if len(j) > 0))
         }
 
-
         while len(realisables) > 0:
 
             if strategy[:4] == 'EST_':
                 next_task = EST_STP(realisables)
 
-
-                end = next_task.duration+max(djob[next_task.ijob],dmac[next_task.machine])
+                end = next_task.duration + max(djob[next_task.ijob], dmac[next_task.machine])
                 dmac[next_task.machine] = end
                 djob[next_task.ijob] = end
 
@@ -203,9 +199,8 @@ class JobShop:
             result[next_task.machine].append(jobs[next_task.ijob].pop(0))
             realisables = [job[0] for job in jobs if len(job) > 0]
 
-
-
         return Solution.from_ressource_matrix(self, result)
+
 
 class Solution(Graphe):
     def __init__(self, problem):
@@ -236,8 +231,21 @@ class Solution(Graphe):
 
     def inv_blocks_of_critical_path(self):
         tasks = [self.problem.get_task_by_nodename(node) for node in self.blocks_of_critical_path()[1:-1]]
-        return [(tasks[i-1], tasks[i]) for i in range(1, len(tasks)) if tasks[i-1].machine == tasks[i].machine]
-
+        res = []
+        current_machine = -1
+        current_list = []
+        for t in tasks:
+            if t.machine != current_machine:
+                if len(current_list) > 1:
+                    res += [current_list]
+                current_list = [t]
+            else:
+                current_list.append(t)
+            current_machine = t.machine
+        if len(current_list) > 1:
+            res += [current_list]
+        return res
+        # return [(tasks[i-1], tasks[i]) for i in range(1, len(tasks)) if tasks[i-1].machine == tasks[i].machine]
 
     @staticmethod
     def from_ressource_matrix(problem, matrix):
@@ -270,7 +278,8 @@ class Solution(Graphe):
 
     @property
     def str_matrix(self):
-        return table([list(range(self.problem.nb_machines))] + self.matrix(), ["num_colonne"] + ["Job " + str(i) for i in range(self.problem.nb_jobs)])
+        return table([list(range(self.problem.nb_machines))] + self.matrix(),
+                     ["num_colonne"] + ["Job " + str(i) for i in range(self.problem.nb_jobs)])
 
     @property
     def ressource_matrix(self):
