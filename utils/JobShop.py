@@ -4,7 +4,7 @@
 from copy import deepcopy
 from utils.Graphe import *
 import time
-from datetime import datetime
+from datetime import datetime,timedelta
 
 class Task:
     """
@@ -191,13 +191,24 @@ class JobShop:
         return Solution.from_ressource_matrix(self, result)
 
 
-
         
-        
-    def TabooSolver(self,maxIter,dureeTaboo):
+    def TabooSolver(self,maxIter,timeout):
         
         # générer une solution initiale réalisable
         s_init = self.heuristique_gloutonne()
+        
+        
+        
+        nodes = s_init.V
+        forbidden=[]
+        sTaboo_matrix = {}
+        for v in nodes:
+            sTaboo_matri[v] = {}
+            for v2 in nodes :
+                sTaboo_matrix[v][v2]=0
+        
+        
+        
         
         #mémoriser la meilleure solution
         best = s_init
@@ -213,20 +224,29 @@ class JobShop:
         tinit = datetime.now()
         
         #Exploration des voisinages successifs
-        while k < maxIter and (datetime.now()-tinit)<dureeTaboo:
+        while k < maxIter and (datetime.now()-tinit)<timeout:
             k+=1
             
             # choose the best neighbor s' which is not 'tabou'
+           
+            for v in nodes:
+                for v2 in nodes:
+                    if sTaboo_matrix[v][v2]!=0:
+                        forbidden += [(self.get_task_by_nodename(nodename = v2),self.get_task_by_nodename(nodename = v))]
             
-            neighbors = s.new_neighbors()
-            obj = max([n.duration() for n in neighbors])
+            
+            neighbors = s.solution_neighbors(forbidden)
+            
+            obj = float('inf')
             for neighbor in neighbors:
-                if neighbor not in sTaboo and neighbor.duration()<obj:
-                    obj = neighbor.duration()
+                if neighbor.duration<obj:
+                    obj = neighbor.duration
                     sprime = neighbor
+                  
+            sTaboo_matrix[neighbors[sprime][0]][neighbors[sprime][1]] = k + dureeTaboo    
             sTaboo+=[sprime]
             s = sprime
-            if sprime.duration()< best.duration():
+            if sprime.duration < best.duration:
                 best = sprime
         
         
@@ -389,52 +409,28 @@ class Solution(Graphe):
                 if a.node_from == str(node_from):
                     return a.cost
 
-    def solution_neighbors(self):
+    def solution_neighbors(self,forbidden = []):
         res = []
         invertibles = self.get_invertibles()
+        
         for permutation in invertibles:
+            
             ipermutables = [(i - 1, i) for i in range(1, len(permutation))]
             for i1, i2 in ipermutables:
-                s = deepcopy(self)
-                s.link((permutation[i2].nodename, permutation[i1].nodename), cost=self.get_cost(permutation[i2]))
-                if i1 > 0:
-                    s.link((permutation[i1 - 1].nodename, permutation[i2].nodename), cost=self.get_cost(permutation[i1 - 1]))
-                if i2 < len(permutation) - 1:
-                    s.link((permutation[i1].nodename, permutation[i2 + 1].nodename), cost=self.get_cost(permutation[i1]))
-                s.unlink([p.nodename for p in permutation[max(i1 - 1, 0):min(i2, len(permutation) - 1) + 2]])
-                s.init_starts()
-                res += [s]
+                if (permutation[i1],permutation[i2]) not in forbidden:
+                    s = deepcopy(self)
+                    s.link((permutation[i2].nodename, permutation[i1].nodename), cost=self.get_cost(permutation[i2]))
+                    if i1 > 0:
+                        s.link((permutation[i1 - 1].nodename, permutation[i2].nodename), cost=self.get_cost(permutation[i1 - 1]))
+                    if i2 < len(permutation) - 1:
+                        s.link((permutation[i1].nodename, permutation[i2 + 1].nodename), cost=self.get_cost(permutation[i1]))
+                    s.unlink([p.nodename for p in permutation[max(i1 - 1, 0):min(i2, len(permutation) - 1) + 2]])
+                    s.init_starts()
+                    res += [s]
+                    
         return res
 
-    def new_neighbors(self):
-        list_permutables = self.get_invertibles()
-        list_solutions = []
 
-        # list_permutables = [[O9,O1,O6],[O15,O16]]
-        for ind1, sub_list in enumerate(list_permutables):
-            permutables = [(i - 1, i) for i in range(1, len(sub_list))]
-            # permutables = [('O9','O1'),('O1','O6']]
-
-            for ind2, perm in enumerate(permutables):
-                # ind2 = 0 , perm = ('09','01')
-                # ind2 = 1 , perm = ('01','06')
-                new_sol = deepcopy(self)
-                new_sol.unlink(list_permutables[ind1])
-                new_sol.link((perm[1], perm[0]), cost=self.get_cost(node_from=perm[1], node_to=perm[0]))
-                if len(permutables) > 1:
-
-                    if ind2 < len(permutables):
-                        # from current to next edge in list
-                        new_sol.link((perm[0], permutables[ind2 + 1][1]),
-                                     cost=self.get_cost(node_from=perm[0], node_to=permutables[ind2 + 1][1]))
-
-                    if ind2 > 0:
-                        # from current to previous in list
-                        new_sol.link((permutables[ind2 - 1][1], perm[1]),
-                                     cost=self.get_cost(node_from=permutables[ind2 - 1][1], node_to=perm[1]))
-                list_solutions += [new_sol]
-
-        return list_solutions
 
     
     

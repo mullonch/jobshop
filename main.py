@@ -3,10 +3,12 @@ from datetime import timedelta
 js = JobShop()
 
 
-#sol = js.heuristique_gloutonne("EST_SPT")
-sol = js.TabooSolver(maxIter = 20,dureeTaboo=timedelta(seconds = 10))
-print(sol.duration)
-print(sol.new_neighbors())
+# sol = js.heuristique_gloutonne("EST_SPT")
+# print(sol.V)
+sol = js.TabooSolver(maxIter = 20,timeout=timedelta(seconds = 10))
+print('duration:',sol.duration)
+print('\n')
+#print(sol.solution_neighbors())
 
 # sol = js.heuristique_gloutonne("EST_SPT")
 # print(sol.get_invertibles())
