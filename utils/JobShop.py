@@ -204,6 +204,38 @@ class JobShop:
     def descente(self):
         sol = Solution(self)
         
+        
+        
+        
+    def TabooSolver(self,maxIter,dureeTaboo):
+        
+        # générer une solution initiale réalisable
+        s_init = heuristique_gloutonne(self)
+        
+        #mémoriser la meilleure solution
+        best = s_init
+        
+        # solution courrante
+        s = s_init
+        
+        #solutions tabou
+        sTaboo = [s]
+        
+        #compteur d'iétrations
+        k=0
+        tinit = time.time()
+        
+        #Exploration des voisinages successifs
+        while k < maxIter and (time.time()-t_init)<dureeTaboo:
+            K+=1
+            
+            # choose the best neiighbor s' which is not 'tabou'
+            critical_path = s.blocks_of_critical_path()
+            
+            neighbors = 
+            
+        
+        
 
 class Solution(Graphe):
     def __init__(self, problem):
@@ -383,6 +415,9 @@ class Solution(Graphe):
                         
                         
         return list_solutions
+    
+    
+    
         
 
 def table(tab, lig_names):
