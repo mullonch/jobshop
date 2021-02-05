@@ -119,6 +119,7 @@ class JobShop:
             for t1, t2 in itertools.combinations(tasks, 2):
                 res[imac].link((t1.nodename, t2.nodename), cost=t1.duration)
                 res[imac].link((t2.nodename, t1.nodename), cost=t2.duration)
+        return res
 
     def pick_first_solution(self):
         # TODO faire mieux que ça
@@ -146,65 +147,50 @@ class JobShop:
         LPT : Longest Processing Time
         SRPT : Shortest Remaining Processing Time
         LRPT : Longest Remaining Processing Time
+        EST_SPT, EST_**** : ???
         :return:
         """
         result = [[] for _ in range(self.nb_machines)]
         jobs = deepcopy(self.jobs)
         realisables = [job[0] for job in jobs]
 
-        dmac = [0 for _ in range(self.nb_machines)]
-        djob = [0 for _ in range(self.nb_jobs)]
-
-        def EST_STP(realisables):
-
+        def EST(realisables):
             start_dates = [0 for _ in range(len(realisables))]
-
             possible_next_tasks = []
 
             for ind, task in enumerate(realisables):
-                start_dates[ind] = max(djob[task.ijob], dmac[task.machine])
-
+                start_dates[ind] = max(EST.djob[task.ijob], EST.dmac[task.machine])
             for ind, task in enumerate(realisables):
                 if start_dates[ind] == min(start_dates):
                     possible_next_tasks += [task]
 
-            if len(possible_next_tasks) > 1:
-                next_task = selectors[strategy[4:]](possible_next_tasks)
-            else:
-                next_task = possible_next_tasks[0]
+            next_task = selectors[strategy[4:]](possible_next_tasks)
+            end = next_task.duration + max(EST.djob[next_task.ijob], EST.dmac[next_task.machine])
 
+            EST.dmac[next_task.machine] = end
+            EST.djob[next_task.ijob] = end
             return next_task
 
+        EST.dmac = [0 for _ in range(self.nb_machines)]
+        EST.djob = [0 for _ in range(self.nb_jobs)]
         selectors = {
             "SPT": lambda x: next(a for a in x if a.duration == min(a.duration for a in x)),
             "LPT": lambda x: next(a for a in x if a.duration == max(a.duration for a in x)),
             "SRPT": lambda x: next(a for a in x if sum(t.duration for t in jobs[a.ijob]) == min(
                 sum(a.duration for a in j) for j in jobs if len(j) > 0)),
             "LRPT": lambda x: next(a for a in x if sum(t.duration for t in jobs[a.ijob]) == max(
-                sum(a.duration for a in j) for j in jobs if len(j) > 0))
+                sum(a.duration for a in j) for j in jobs if len(j) > 0)),
+            "EST_": EST
         }
 
         while len(realisables) > 0:
-
-            if strategy[:4] == 'EST_':
-                next_task = EST_STP(realisables)
-
-                end = next_task.duration + max(djob[next_task.ijob], dmac[next_task.machine])
-                dmac[next_task.machine] = end
-                djob[next_task.ijob] = end
-
-            else:
-                next_task = selectors[strategy](realisables)
-
+            next_task = selectors[strategy[:4]](realisables)
             result[next_task.machine].append(jobs[next_task.ijob].pop(0))
             realisables = [job[0] for job in jobs if len(job) > 0]
-
         return Solution.from_ressource_matrix(self, result)
-       
-    def descente(self):
-        sol = Solution(self)
-        
-        
+
+
+
         
         
     def TabooSolver(self,maxIter,dureeTaboo):
@@ -264,7 +250,7 @@ class Solution(Graphe):
             result = [crit_orig[result[0]]] + result
         return result
 
-    def inv_blocks_of_critical_path(self):
+    def get_invertibles(self):
         tasks = [self.problem.get_task_by_nodename(node) for node in self.blocks_of_critical_path()[1:-1]]
         res = []
         current_machine = -1
@@ -313,7 +299,7 @@ class Solution(Graphe):
 
     @property
     def str_matrix(self):
-        return table([list(range(self.problem.nb_machines))] + self.matrix(),
+        return table([list(range(self.problem.nb_machines))] + self.matrix,
                      ["num_colonne"] + ["Job " + str(i) for i in range(self.problem.nb_jobs)])
 
     @property
@@ -361,9 +347,8 @@ class Solution(Graphe):
         return res
 
     def date_debut_tache(self, task_name):
-        if self.starts[task_name] is None:
+        if not hasattr(self, 'starts'):
             self.init_starts()
-            # self.starts[task_name] = self.longest_path_length("stS", task_name)
         return self.starts[task_name]
 
     def longest_path_length(self, node_from, node_to):
@@ -384,41 +369,49 @@ class Solution(Graphe):
     def duration(self):
         return self.date_debut_tache("stF")
 
+    def solution_neighbors(self):
+        invertibles = self.get_invertibles()
+        for permutation in invertibles:
+            pass
 
-
-    def new_neighbors(self,list_permutables):
-        
+    def new_neighbors(self):
+        list_permutables = self.get_invertibles()
         list_solutions = []
-        
-        #list_permutables = [[O9,O1,O6],[O15,O16]]
-        for ind1,sub_list in enumerate(list_permutables):
-            permutables = [(i-1, i) for i in range(1, len(sub_list))]
-            #permutables = [('O9','O1'),('O1','O6']]
-            
-            for ind2,perm in enumerate(permutables):
-                #ind2 = 0 , perm = ('09','01')
-                #ind2 = 1 , perm = ('01','06')
+
+
+        # list_permutables = [[O9,O1,O6],[O15,O16]]
+        for ind1, sub_list in enumerate(list_permutables):
+            permutables = [(i - 1, i) for i in range(1, len(sub_list))]
+            # permutables = [('O9','O1'),('O1','O6']]
+
+            for ind2, perm in enumerate(permutables):
+                # ind2 = 0 , perm = ('09','01')
+                # ind2 = 1 , perm = ('01','06')
                 new_sol = deepcopy(self)
                 new_sol.unlink(list_permutables[ind1])
-                
-                new_sol.link(perm[1],perm[0], cost = self.get_cost(node_from = perm[1], node_to = perm[0]))
-                if len(permutables)>1:
-                    
+                new_sol.link((perm[1], perm[0]), cost=self.get_cost(node_from=perm[1], node_to=perm[0]))
+                if len(permutables) > 1:
+
                     if ind2 < len(permutables):
-                        #from current to next edge in list
-                        new_sol.link(perm[0],permutables[ind2+1][1], cost = self.get_cost(node_from = perm[0], node_to = permutables[ind2+1][1]))
-                        
-                    if ind2>0:
-                        #from current to previous in list
-                        new_sol.link(permutables[ind2-1][1],perm[1], cost = self.get_cost(node_from = permutables[ind2-1][1], node_to = perm[1]))
-                list_solutions+=[new_sol]
-                        
-                        
+                        # from current to next edge in list
+                        new_sol.link((perm[0], permutables[ind2 + 1][1]),
+                                     cost=self.get_cost(node_from=perm[0], node_to=permutables[ind2 + 1][1]))
+
+                    if ind2 > 0:
+                        # from current to previous in list
+                        new_sol.link((permutables[ind2 - 1][1], perm[1]),
+                                     cost=self.get_cost(node_from=permutables[ind2 - 1][1], node_to=perm[1]))
+                list_solutions += [new_sol]
+
         return list_solutions
+
     
     
     
         
+=======
+
+>>>>>>> 2de4803969bd18304f35e6bb503e3476f7339f34
 
 def table(tab, lig_names):
     l_first_col = max(len(a) for a in lig_names)
