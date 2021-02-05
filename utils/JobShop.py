@@ -339,15 +339,34 @@ class Solution(Graphe):
     def duration(self):
         return self.date_debut_tache("stF")
 
+    def get_cost(self, node_from, node_to=None):
+        if (node_to is None):
+            return super().get_cost(node_from, node_to)
+        else:
+            for a in self.E:
+                if a.node_from == str(node_from):
+                    return a.cost
+
     def solution_neighbors(self):
+        res = []
         invertibles = self.get_invertibles()
         for permutation in invertibles:
-            pass
+            ipermutables = [(i - 1, i) for i in range(1, len(permutation))]
+            for i1, i2 in ipermutables:
+                s = deepcopy(self)
+                s.link((permutation[i2].nodename, permutation[i1].nodename), cost=self.get_cost(permutation[i2]))
+                if i1 > 0:
+                    s.link((permutation[i1 - 1].nodename, permutation[i2].nodename), cost=self.get_cost(permutation[i1 - 1]))
+                if i2 < len(permutation) - 1:
+                    s.link((permutation[i1].nodename, permutation[i2 + 1].nodename), cost=self.get_cost(permutation[i1]))
+                s.unlink([p.nodename for p in permutation[max(i1 - 1, 0):min(i2, len(permutation) - 1) + 2]])
+                s.init_starts()
+                res += [s]
+        return res
 
     def new_neighbors(self):
         list_permutables = self.get_invertibles()
         list_solutions = []
-
 
         # list_permutables = [[O9,O1,O6],[O15,O16]]
         for ind1, sub_list in enumerate(list_permutables):
