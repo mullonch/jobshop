@@ -229,8 +229,6 @@ class JobShop:
         
         #Exploration des voisinages successifs
         while k < maxIter and (datetime.now()-tinit)<timeout:
-            
-            print('k=',k)
             # remplir la liste de permutations interdite à partir de sTaboo_matrix:       
             for v1 in nodes:
                 for v2 in nodes:
@@ -238,20 +236,15 @@ class JobShop:
                         forbidden += [(self.get_task_by_nodename(nodename = v1),self.get_task_by_nodename(nodename = v2))]
                     if 0 < sTaboo_matrix[v1][v2]<= k :
                         if (self.get_task_by_nodename(nodename = v1),self.get_task_by_nodename(nodename = v2)) in forbidden:
-                        
-                            print('removed')
                             forbidden.remove((self.get_task_by_nodename(nodename = v1),self.get_task_by_nodename(nodename = v2)))
             
             
             
             # choose the best neighbor s_prime which is not tabou
-            print('find neighbors')
             neighbors = s.solution_neighbors(forbidden)
             obj = float('inf')
-            print('[n.duration for n in neighbors]',[n.duration for n in neighbors])
             
             if len(neighbors) == 0:
-                print('break')
                 break
             else:
                 for n in neighbors:
@@ -260,9 +253,6 @@ class JobShop:
                     if n.duration<=obj :
                         obj = n.duration
                         sprime = n
-                  
-                    
-            print('neighbors[sprime]:',neighbors[sprime])
             sTaboo_matrix[neighbors[sprime][0]][neighbors[sprime][1]] = k + dureeTaboo    
             s = sprime
             
@@ -285,9 +275,6 @@ class Solution(Graphe):
         else:
             self.starts = dict.fromkeys(self.V, 0)
             for node in self.topological_list():
-                if float("inf") in [self.get_cost(p, node) for p in self.get_incomings(node)]:
-                    print("MARQUEUR 001")
-                    exit()
                 self.starts[node] = max(
                     [self.starts[node]] + [self.starts[p] + self.get_cost(p, node) for p in self.get_incomings(node)])
 
@@ -437,36 +424,19 @@ class Solution(Graphe):
 
     def solution_neighbors(self,forbidden = []):
         res = dict()
-        
         invertibles = self.get_invertibles()
-        print('get_invertibles function ok')
-        print('invertibles',invertibles)
         for permutation in invertibles:
-            print(permutation)
-            
             ipermutables = [(i - 1, i) for i in range(1, len(permutation))]
             for i1, i2 in ipermutables:
                 if (permutation[i1],permutation[i2]) not in forbidden:
                     s = deepcopy(self)
-                    if self.get_cost(permutation[i2]) == float("inf"):
-                        print("MARQUEUR 002")
-                        exit()
                     s.link((permutation[i2].nodename, permutation[i1].nodename), cost=self.get_cost(permutation[i2]))
                     if i1 > 0:
-                        if self.get_cost(permutation[i1 - 1]) == float("inf"):
-                            print("MARQUEUR 003")
-                            exit()
                         s.link((permutation[i1 - 1].nodename, permutation[i2].nodename), cost=self.get_cost(permutation[i1 - 1]))
                     if i2 < len(permutation) - 1:
-                        if self.get_cost(permutation[i1]) == float("inf"):
-                            print("MARQUEUR 004")
-                            exit()
                         s.link((permutation[i1].nodename, permutation[i2 + 1].nodename), cost=self.get_cost(permutation[i1]))
                     s.unlink([p.nodename for p in permutation[max(i1 - 1, 0):min(i2, len(permutation) - 1) + 2]])
-                    print(s.is_realisable())
                     s.init_starts()
-                    print('s.init_starts() ok')
-                    
                     res[s] = (permutation[i1].nodename, permutation[i2].nodename)
 
         return res
