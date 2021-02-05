@@ -1,9 +1,6 @@
 from utils.JobShop import *
+from utils.Graphe import *
 
-js = JobShop()
-sol = js.descente()
-n = sol.solution_neighbors()
-for s in n:
-    print(s)
-    print(s.duration)
-    print(n[s])
+g = Graphe()
+g += ["A", "B", "C", "D","E"]
+print(g.shorter_path_length("A", "E"))
