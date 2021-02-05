@@ -31,6 +31,9 @@ class Graphe:
             return self.V == g.V and self.E == g.E
         return False
 
+    def __hash__(self):
+        return hash(tuple(self.E) + tuple(self.V))
+
     def __ne__(self, g):
         if isinstance(g, Graphe):
             return self.V != g.V or self.E != g.E

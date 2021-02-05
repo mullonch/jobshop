@@ -1,8 +1,9 @@
 from utils.JobShop import *
-from datetime import timedelta
+
 js = JobShop()
-
-
 sol = js.descente()
-print(sol.duration)
-
+n = sol.solution_neighbors()
+for s in n:
+    print(s)
+    print(s.duration)
+    print(n[s])

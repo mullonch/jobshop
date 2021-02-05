@@ -394,7 +394,7 @@ class Solution(Graphe):
                     return a.cost
 
     def solution_neighbors(self):
-        res = []
+        res = dict()
         invertibles = self.get_invertibles()
         for permutation in invertibles:
             ipermutables = [(i - 1, i) for i in range(1, len(permutation))]
@@ -407,7 +407,7 @@ class Solution(Graphe):
                     s.link((permutation[i1].nodename, permutation[i2 + 1].nodename), cost=self.get_cost(permutation[i1]))
                 s.unlink([p.nodename for p in permutation[max(i1 - 1, 0):min(i2, len(permutation) - 1) + 2]])
                 s.init_starts()
-                res += [s]
+                res[s] = (permutation[i1].nodename, permutation[i2].nodename)
         return res
 
     def new_neighbors(self):
