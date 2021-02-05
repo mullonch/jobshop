@@ -31,6 +31,9 @@ class Graphe:
             return self.V == g.V and self.E == g.E
         return False
 
+    def __hash__(self):
+        return hash(tuple(self.E) + tuple(self.V))
+
     def __ne__(self, g):
         if isinstance(g, Graphe):
             return self.V != g.V or self.E != g.E
@@ -174,10 +177,12 @@ class Graphe:
         return res
 
     def is_path(self, node_from, node_to, level=0):
+        return self.shorter_path(node_from, node_to)!= -1
         # Parcours en profondeur (récursif)
-        if node_from == node_to and level != 0:
-            return True
-        return any([self.is_path(next_node, node_to, level + 1) for next_node in self.get_neighbors(node_from)])
+        # if node_from == node_to and level != 0:
+        #     return True
+        # return any([self.is_path(next_node, node_to, level + 1) for next_node in self.get_neighbors(node_from)])
+        
 
     def has_cycle(self):
         return any(self.is_path(n, n) for n in self.V)

@@ -190,26 +190,30 @@ class JobShop:
             realisables = [job[0] for job in jobs if len(job) > 0]
         return Solution.from_ressource_matrix(self, result)
 
+    def descente(self, baseSolution=None):
+        if baseSolution is None:
+            baseSolution = self.heuristique_gloutonne("EST_SPT")
+        for neighbor in baseSolution.solution_neighbors():
+            if neighbor.duration < baseSolution.duration:
+                return self.descente(neighbor)
+        return baseSolution
 
-        
-    def TabooSolver(self,maxIter,timeout):
+
+    def TabooSolver(self,maxIter,timeout,dureeTaboo):
         
         # générer une solution initiale réalisable
-        s_init = self.heuristique_gloutonne()
+        s_init = self.heuristique_gloutonne("EST_SPT")
         
-        
-        
+        #Initialiser la matrice sTaboo:
         nodes = s_init.V
         forbidden=[]
         sTaboo_matrix = {}
-        for v in nodes:
-            sTaboo_matri[v] = {}
+        for v1 in nodes:
+            sTaboo_matrix[v1] = {}
             for v2 in nodes :
-                sTaboo_matrix[v][v2]=0
+                sTaboo_matrix[v1][v2]=0
         
-        
-        
-        
+                        
         #mémoriser la meilleure solution
         best = s_init
         
@@ -225,46 +229,64 @@ class JobShop:
         
         #Exploration des voisinages successifs
         while k < maxIter and (datetime.now()-tinit)<timeout:
-            k+=1
             
-            # choose the best neighbor s' which is not 'tabou'
-           
-            for v in nodes:
+            print('k=',k)
+            # remplir la liste de permutations interdite à partir de sTaboo_matrix:       
+            for v1 in nodes:
                 for v2 in nodes:
-                    if sTaboo_matrix[v][v2]!=0:
-                        forbidden += [(self.get_task_by_nodename(nodename = v2),self.get_task_by_nodename(nodename = v))]
+                    if sTaboo_matrix[v1][v2]>k :
+                        forbidden += [(self.get_task_by_nodename(nodename = v1),self.get_task_by_nodename(nodename = v2))]
+                    if 0 < sTaboo_matrix[v1][v2]<= k :
+                        if (self.get_task_by_nodename(nodename = v1),self.get_task_by_nodename(nodename = v2)) in forbidden:
+                        
+                            print('removed')
+                            forbidden.remove((self.get_task_by_nodename(nodename = v1),self.get_task_by_nodename(nodename = v2)))
             
             
+            
+            # choose the best neighbor s_prime which is not tabou
+            print('find neighbors')
             neighbors = s.solution_neighbors(forbidden)
-            
             obj = float('inf')
-            for neighbor in neighbors:
-                if neighbor.duration<obj:
-                    obj = neighbor.duration
-                    sprime = neighbor
+            print('[n.duration for n in neighbors]',[n.duration for n in neighbors])
+            
+            if len(neighbors) == 0:
+                print('break')
+                break
+            else:
+                for n in neighbors:
+                    # print(neighbors[n])
+                    # print('n.duration : ',n.duration)
+                    if n.duration<=obj :
+                        obj = n.duration
+                        sprime = n
                   
+                    
+            print('neighbors[sprime]:',neighbors[sprime])
             sTaboo_matrix[neighbors[sprime][0]][neighbors[sprime][1]] = k + dureeTaboo    
-            sTaboo+=[sprime]
             s = sprime
+            
             if sprime.duration < best.duration:
                 best = sprime
-        
+                
+            k+=1
         
         return best
             
         
-        
-
 class Solution(Graphe):
     def __init__(self, problem):
         super().__init__()
         self.problem = problem
 
     def init_starts(self):
-        self.starts = dict.fromkeys(self.V, 0)
-        for node in self.topological_list():
-            self.starts[node] = max(
-                [self.starts[node]] + [self.starts[p] + self.get_cost(p, node) for p in self.get_incomings(node)])
+        if self.has_cycle():
+            self.starts = dict.fromkeys(self.V, float('inf'))
+        else:
+            self.starts = dict.fromkeys(self.V, 0)
+            for node in self.topological_list():
+                self.starts[node] = max(
+                    [self.starts[node]] + [self.starts[p] + self.get_cost(p, node) for p in self.get_incomings(node)])
 
     def blocks_of_critical_path(self):
         crit_orig = dict.fromkeys(self.V, 0)
@@ -409,11 +431,15 @@ class Solution(Graphe):
                 if a.node_from == str(node_from):
                     return a.cost
 
+
     def solution_neighbors(self,forbidden = []):
-        res = []
-        invertibles = self.get_invertibles()
+        res = dict()
         
+        invertibles = self.get_invertibles()
+        print('get_invertibles function ok')
+        print('invertibles',invertibles)
         for permutation in invertibles:
+            print(permutation)
             
             ipermutables = [(i - 1, i) for i in range(1, len(permutation))]
             for i1, i2 in ipermutables:
@@ -425,16 +451,17 @@ class Solution(Graphe):
                     if i2 < len(permutation) - 1:
                         s.link((permutation[i1].nodename, permutation[i2 + 1].nodename), cost=self.get_cost(permutation[i1]))
                     s.unlink([p.nodename for p in permutation[max(i1 - 1, 0):min(i2, len(permutation) - 1) + 2]])
+                    print(s.is_realisable())
                     s.init_starts()
-                    res += [s]
+                    print('s.init_starts() ok')
                     
+                    res[s] = (permutation[i1].nodename, permutation[i2].nodename)
+
         return res
 
 
 
-    
-    
-    
+
 
 def table(tab, lig_names):
     l_first_col = max(len(a) for a in lig_names)
