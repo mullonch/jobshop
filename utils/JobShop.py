@@ -3,7 +3,8 @@
 """
 from copy import deepcopy
 from utils.Graphe import *
-
+import time
+from datetime import datetime
 
 class Task:
     """
@@ -196,7 +197,7 @@ class JobShop:
     def TabooSolver(self,maxIter,dureeTaboo):
         
         # générer une solution initiale réalisable
-        s_init = heuristique_gloutonne(self)
+        s_init = self.heuristique_gloutonne()
         
         #mémoriser la meilleure solution
         best = s_init
@@ -209,16 +210,27 @@ class JobShop:
         
         #compteur d'iétrations
         k=0
-        tinit = time.time()
+        tinit = datetime.now()
         
         #Exploration des voisinages successifs
-        while k < maxIter and (time.time()-t_init)<dureeTaboo:
-            K+=1
+        while k < maxIter and (datetime.now()-tinit)<dureeTaboo:
+            k+=1
             
-            # choose the best neiighbor s' which is not 'tabou'
-            critical_path = s.blocks_of_critical_path()
+            # choose the best neighbor s' which is not 'tabou'
             
-            neighbors = 
+            neighbors = s.new_neighbors()
+            obj = max([n.duration() for n in neighbors])
+            for neighbor in neighbors:
+                if neighbor not in sTaboo and neighbor.duration()<obj:
+                    obj = neighbor.duration()
+                    sprime = neighbor
+            sTaboo+=[sprime]
+            s = sprime
+            if sprime.duration()< best.duration():
+                best = sprime
+        
+        
+        return best
             
         
         
@@ -408,10 +420,6 @@ class Solution(Graphe):
     
     
     
-        
-=======
-
->>>>>>> 2de4803969bd18304f35e6bb503e3476f7339f34
 
 def table(tab, lig_names):
     l_first_col = max(len(a) for a in lig_names)
