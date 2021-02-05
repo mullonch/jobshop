@@ -198,7 +198,6 @@ class JobShop:
                 return self.descente(neighbor)
         return baseSolution
 
-
     def TabooSolver(self,maxIter,timeout,dureeTaboo):
         
         # générer une solution initiale réalisable
