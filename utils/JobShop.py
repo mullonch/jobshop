@@ -189,8 +189,14 @@ class JobShop:
             realisables = [job[0] for job in jobs if len(job) > 0]
         return Solution.from_ressource_matrix(self, result)
 
-    def descente(self):
-        pass
+    def descente(self, baseSolution=None):
+        if baseSolution is None:
+            baseSolution = self.heuristique_gloutonne("EST_SPT")
+        for neighbor in baseSolution.solution_neighbors():
+            if neighbor.duration < baseSolution.duration:
+                return self.descente(neighbor)
+        return baseSolution
+
 
 
 class Solution(Graphe):
