@@ -177,10 +177,15 @@ class Graphe:
         return res
 
     def is_path(self, node_from, node_to, level=0):
+        if(level>50):
+            print("RECURSIONS DANGEREUSES...")
+            print(self)
+            exit()
         # Parcours en profondeur (récursif)
         if node_from == node_to and level != 0:
             return True
         return any([self.is_path(next_node, node_to, level + 1) for next_node in self.get_neighbors(node_from)])
+
 
     def has_cycle(self):
         return any(self.is_path(n, n) for n in self.V)

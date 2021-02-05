@@ -4,7 +4,7 @@
 from copy import deepcopy
 from utils.Graphe import *
 import time
-from datetime import datetime
+from datetime import datetime,timedelta
 
 class Task:
     """
@@ -198,11 +198,22 @@ class JobShop:
                 return self.descente(neighbor)
         return baseSolution
 
-    def TabooSolver(self,maxIter,dureeTaboo):
+
+    def TabooSolver(self,maxIter,timeout,dureeTaboo):
         
         # générer une solution initiale réalisable
-        s_init = self.heuristique_gloutonne()
+        s_init = self.heuristique_gloutonne("EST_SPT")
         
+        #Initialiser la matrice sTaboo:
+        nodes = s_init.V
+        forbidden=[]
+        sTaboo_matrix = {}
+        for v1 in nodes:
+            sTaboo_matrix[v1] = {}
+            for v2 in nodes :
+                sTaboo_matrix[v1][v2]=0
+        
+                        
         #mémoriser la meilleure solution
         best = s_init
         
@@ -217,38 +228,68 @@ class JobShop:
         tinit = datetime.now()
         
         #Exploration des voisinages successifs
-        while k < maxIter and (datetime.now()-tinit)<dureeTaboo:
-            k+=1
+        while k < maxIter and (datetime.now()-tinit)<timeout:
             
-            # choose the best neighbor s' which is not 'tabou'
+            print('k=',k)
+            # remplir la liste de permutations interdite à partir de sTaboo_matrix:       
+            for v1 in nodes:
+                for v2 in nodes:
+                    if sTaboo_matrix[v1][v2]>k :
+                        forbidden += [(self.get_task_by_nodename(nodename = v1),self.get_task_by_nodename(nodename = v2))]
+                    if 0 < sTaboo_matrix[v1][v2]<= k :
+                        if (self.get_task_by_nodename(nodename = v1),self.get_task_by_nodename(nodename = v2)) in forbidden:
+                        
+                            print('removed')
+                            forbidden.remove((self.get_task_by_nodename(nodename = v1),self.get_task_by_nodename(nodename = v2)))
             
-            neighbors = s.new_neighbors()
-            obj = max([n.duration() for n in neighbors])
-            for neighbor in neighbors:
-                if neighbor not in sTaboo and neighbor.duration()<obj:
-                    obj = neighbor.duration()
-                    sprime = neighbor
-            sTaboo+=[sprime]
+            
+            
+            # choose the best neighbor s_prime which is not tabou
+            print('find neighbors')
+            neighbors = s.solution_neighbors(forbidden)
+            obj = float('inf')
+            print('[n.duration for n in neighbors]',[n.duration for n in neighbors])
+            
+            if len(neighbors) == 0:
+                print('break')
+                break
+            else:
+                for n in neighbors:
+                    # print(neighbors[n])
+                    # print('n.duration : ',n.duration)
+                    if n.duration<=obj :
+                        obj = n.duration
+                        sprime = n
+                  
+                    
+            print('neighbors[sprime]:',neighbors[sprime])
+            sTaboo_matrix[neighbors[sprime][0]][neighbors[sprime][1]] = k + dureeTaboo    
             s = sprime
-            if sprime.duration()< best.duration():
+            
+            if sprime.duration < best.duration:
                 best = sprime
-        
+                
+            k+=1
         
         return best
             
         
-        
-
 class Solution(Graphe):
     def __init__(self, problem):
         super().__init__()
         self.problem = problem
 
     def init_starts(self):
-        self.starts = dict.fromkeys(self.V, 0)
-        for node in self.topological_list():
-            self.starts[node] = max(
-                [self.starts[node]] + [self.starts[p] + self.get_cost(p, node) for p in self.get_incomings(node)])
+        if self.has_cycle():
+            self.starts = dict.fromkeys(self.V, float('inf'))
+        else:
+            self.starts = dict.fromkeys(self.V, 0)
+            for node in self.topological_list():
+                if float("inf") in [self.get_cost(p, node) for p in self.get_incomings(node)]:
+                    print("MARQUEUR 001")
+                    exit()
+                self.starts[node] = max(
+                    [self.starts[node]] + [self.starts[p] + self.get_cost(p, node) for p in self.get_incomings(node)])
 
     def blocks_of_critical_path(self):
         crit_orig = dict.fromkeys(self.V, 0)
@@ -298,10 +339,10 @@ class Solution(Graphe):
                 s.link((machine[i - 1].nodename, machine[i].nodename), machine[i - 1].duration)
         return s
 
-    def __str__(self):
-        if not hasattr(self, 'starts'):
-            self.init_starts()
-        return str(self.starts)
+    #def __str__(self):
+        #if not hasattr(self, 'starts'):
+        #    self.init_starts()
+        #return str(self.starts)
 
     def is_realisable(self):
         """
@@ -386,63 +427,53 @@ class Solution(Graphe):
         return self.date_debut_tache("stF")
 
     def get_cost(self, node_from, node_to=None):
-        if (node_to is None):
+        if node_to is not None:
             return super().get_cost(node_from, node_to)
         else:
             for a in self.E:
                 if a.node_from == str(node_from):
                     return a.cost
 
-    def solution_neighbors(self):
+
+    def solution_neighbors(self,forbidden = []):
         res = dict()
+        
         invertibles = self.get_invertibles()
+        print('get_invertibles function ok')
+        print('invertibles',invertibles)
         for permutation in invertibles:
+            print(permutation)
+            
             ipermutables = [(i - 1, i) for i in range(1, len(permutation))]
             for i1, i2 in ipermutables:
-                s = deepcopy(self)
-                s.link((permutation[i2].nodename, permutation[i1].nodename), cost=self.get_cost(permutation[i2]))
-                if i1 > 0:
-                    s.link((permutation[i1 - 1].nodename, permutation[i2].nodename), cost=self.get_cost(permutation[i1 - 1]))
-                if i2 < len(permutation) - 1:
-                    s.link((permutation[i1].nodename, permutation[i2 + 1].nodename), cost=self.get_cost(permutation[i1]))
-                s.unlink([p.nodename for p in permutation[max(i1 - 1, 0):min(i2, len(permutation) - 1) + 2]])
-                s.init_starts()
-                res[s] = (permutation[i1].nodename, permutation[i2].nodename)
+                if (permutation[i1],permutation[i2]) not in forbidden:
+                    s = deepcopy(self)
+                    if self.get_cost(permutation[i2]) == float("inf"):
+                        print("MARQUEUR 002")
+                        exit()
+                    s.link((permutation[i2].nodename, permutation[i1].nodename), cost=self.get_cost(permutation[i2]))
+                    if i1 > 0:
+                        if self.get_cost(permutation[i1 - 1]) == float("inf"):
+                            print("MARQUEUR 003")
+                            exit()
+                        s.link((permutation[i1 - 1].nodename, permutation[i2].nodename), cost=self.get_cost(permutation[i1 - 1]))
+                    if i2 < len(permutation) - 1:
+                        if self.get_cost(permutation[i1]) == float("inf"):
+                            print("MARQUEUR 004")
+                            exit()
+                        s.link((permutation[i1].nodename, permutation[i2 + 1].nodename), cost=self.get_cost(permutation[i1]))
+                    s.unlink([p.nodename for p in permutation[max(i1 - 1, 0):min(i2, len(permutation) - 1) + 2]])
+                    print(s.is_realisable())
+                    s.init_starts()
+                    print('s.init_starts() ok')
+                    
+                    res[s] = (permutation[i1].nodename, permutation[i2].nodename)
+
         return res
 
-    def new_neighbors(self):
-        list_permutables = self.get_invertibles()
-        list_solutions = []
 
-        # list_permutables = [[O9,O1,O6],[O15,O16]]
-        for ind1, sub_list in enumerate(list_permutables):
-            permutables = [(i - 1, i) for i in range(1, len(sub_list))]
-            # permutables = [('O9','O1'),('O1','O6']]
 
-            for ind2, perm in enumerate(permutables):
-                # ind2 = 0 , perm = ('09','01')
-                # ind2 = 1 , perm = ('01','06')
-                new_sol = deepcopy(self)
-                new_sol.unlink(list_permutables[ind1])
-                new_sol.link((perm[1], perm[0]), cost=self.get_cost(node_from=perm[1], node_to=perm[0]))
-                if len(permutables) > 1:
 
-                    if ind2 < len(permutables):
-                        # from current to next edge in list
-                        new_sol.link((perm[0], permutables[ind2 + 1][1]),
-                                     cost=self.get_cost(node_from=perm[0], node_to=permutables[ind2 + 1][1]))
-
-                    if ind2 > 0:
-                        # from current to previous in list
-                        new_sol.link((permutables[ind2 - 1][1], perm[1]),
-                                     cost=self.get_cost(node_from=permutables[ind2 - 1][1], node_to=perm[1]))
-                list_solutions += [new_sol]
-
-        return list_solutions
-
-    
-    
-    
 
 def table(tab, lig_names):
     l_first_col = max(len(a) for a in lig_names)
