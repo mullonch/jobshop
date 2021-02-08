@@ -17,6 +17,9 @@ class Task:
         self.ijob = ijob
         self.itask = itask
 
+    def temprepr(self):
+        return self.nodename + "(" + str(self.machine) + ")"
+
     def __repr__(self):
         return self.nodename
 
@@ -45,7 +48,7 @@ class JobShop:
         durations = [[job[i] for i in range(len(job)) if i % 2] for job in lines]
         self.jobs = []
         for j in range(self.nb_jobs):
-            self.jobs.append([Task(machines[j][i] - 1, durations[j][i], j, i) for i in range(self.nb_machines)])
+            self.jobs.append([Task(machines[j][i], durations[j][i], j, i) for i in range(self.nb_machines)])
 
     def get_naive_upper_bound(self):
         """
