@@ -4,17 +4,6 @@ import seaborn as sns
 import random
 
 js = JobShop(filename="instances/ft06")
-for i in range(20):
-    sol = js.multiple_descente(nb_starts=1)[0]
-    print(i, " : ", sol.duration)
-    print(sol.problem.jobs)
-    print(sol)
-    print(sol.gant)
-    exit()
-
-
-exit()
-js = JobShop(filename="instances/ft06")
 solutions = dict()
 for strategy in ["random", "SPT", "LPT", "SRPT", "LRPT","EST_SPT", "EST_LPT"]:
     solutions[strategy] = js.heuristique_gloutonne(strategy)

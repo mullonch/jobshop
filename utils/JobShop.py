@@ -402,8 +402,7 @@ class Solution(Graphe):
         return res
 
     def date_debut_tache(self, task_name):
-        if not hasattr(self, 'starts'):
-            self.init_starts()
+        self.init_starts()
         return self.starts[task_name]
 
     def longest_path_length(self, node_from, node_to):
