@@ -1,28 +1,30 @@
 from utils.JobShop import *
-from utils.Graphe import *
-from datetime import timedelta
-import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-
+import random
 
 
 js = JobShop(filename="instances/ft06")
+solutions = dict()
+for strategy in ["random", "SPT", "LPT", "SRPT", "LRPT","EST_SPT", "EST_LPT"]:
+    solutions[strategy] = js.heuristique_gloutonne(strategy)
+for key in solutions :
+    print(key, " : ", solutions[key].duration)
+best = min(solutions.keys(), key=(lambda k: solutions[k].duration))
+print("best greedy algorithme : ", best, "(makespan = ", solutions[best].duration, ")")
+print("descente à partir de la meilleure solution gloutonne : ")
+descente = js.descente(solutions[best])
+print("Makespan : ", descente.duration)
+print("descentes multiples (20 starters): ")
+md = js.multiple_descente(nb_starts=20)
+print([s.duration for s in md])
+for s in md:
+    if s.duration<55:
+        print("WTF ?")
+        print(s.duration)
+        print(s)
+        exit()
+print("Algos tabous (500 itérations, durée de taboo = 5) : ")
+tb = js.tabooSolver(500, float("inf"), 5)
+print(tb.duration)
 
-sol_taboo =dict()
-M = [10,20,30,40,50,60,70]
-D = [1,5,10,15,20,25,30]
-
-results = np.zeros((len(M),len(D)))
-
-for i,maxiter in enumerate(M):
-    print('maxiter',maxiter)
-    for j,d in enumerate(D):
-        print('duree',d)
-        results[i,j] = js.TabooSolver(maxiter, timedelta(seconds=120),d).duration
-        print(results[i,j])
-        
-
-sns.heatmap(results, vmin=np.min(results), vmax=np.max(results))
-
-        

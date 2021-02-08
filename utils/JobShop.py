@@ -1,9 +1,9 @@
 """
     Module permettant de matérialiser des problèmes de JobShop
 """
+import random
 from copy import deepcopy
 from utils.Graphe import *
-import time
 from datetime import datetime,timedelta
 
 class Task:
@@ -141,7 +141,7 @@ class JobShop:
         solution.link(("st(0, 2)", "st(1, 2)"), 2)
         return solution
 
-    def heuristique_gloutonne(self, strategy="SPT"):
+    def heuristique_gloutonne(self, strategy="SPT", p_rand=0):
         """
         :param strategy: chaine de caractère définissant la stratégie de choix :
         SPT : Shortest Processing Time
@@ -181,11 +181,15 @@ class JobShop:
                 sum(a.duration for a in j) for j in jobs if len(j) > 0)),
             "LRPT": lambda x: next(a for a in x if sum(t.duration for t in jobs[a.ijob]) == max(
                 sum(a.duration for a in j) for j in jobs if len(j) > 0)),
-            "EST_": EST
+            "EST_": EST,
+            "rand": lambda x:random.choice(x)
         }
 
         while len(realisables) > 0:
-            next_task = selectors[strategy[:4]](realisables)
+            if random.random()<p_rand:
+                next_task = selectors["rand"](realisables)
+            else:
+                next_task = selectors[strategy[:4]](realisables)
             result[next_task.machine].append(jobs[next_task.ijob].pop(0))
             realisables = [job[0] for job in jobs if len(job) > 0]
         return Solution.from_ressource_matrix(self, result)
@@ -198,7 +202,12 @@ class JobShop:
                 return self.descente(neighbor)
         return baseSolution
 
-    def TabooSolver(self,maxIter,timeout,dureeTaboo):
+    def multiple_descente(self, nb_starts=10):
+        starters = [self.heuristique_gloutonne(strategy="random") for _ in range(nb_starts)]
+        return [self.descente(baseSolution=s) for s in starters]
+
+
+    def tabooSolver(self,maxIter,timeout,dureeTaboo):
         
         # générer une solution initiale réalisable
         s_init = self.heuristique_gloutonne("EST_SPT")
@@ -227,7 +236,7 @@ class JobShop:
         tinit = datetime.now()
         
         #Exploration des voisinages successifs
-        while k < maxIter and (datetime.now()-tinit)<timeout:
+        while k < maxIter and (datetime.now()-tinit)<timedelta(seconds=timeout):
             # remplir la liste de permutations interdite à partir de sTaboo_matrix:       
             for v1 in nodes:
                 for v2 in nodes:
@@ -325,10 +334,10 @@ class Solution(Graphe):
                 s.link((machine[i - 1].nodename, machine[i].nodename), machine[i - 1].duration)
         return s
 
-    #def __str__(self):
-        #if not hasattr(self, 'starts'):
-        #    self.init_starts()
-        #return str(self.starts)
+    def __str__(self):
+        if not hasattr(self, 'starts'):
+            self.init_starts()
+        return str(self.starts)
 
     def is_realisable(self):
         """
