@@ -177,19 +177,18 @@ class JobShop:
 
         EST.dmac = [0 for _ in range(self.nb_machines)]
         EST.djob = [0 for _ in range(self.nb_jobs)]
+
         selectors = {
-            "SPT": lambda x: next(a for a in x if a.duration == min(a.duration for a in x)),
-            "LPT": lambda x: next(a for a in x if a.duration == max(a.duration for a in x)),
-            "SRPT": lambda x: next(a for a in x if sum(t.duration for t in jobs[a.ijob]) == min(
-                sum(a.duration for a in j) for j in jobs if len(j) > 0)),
-            "LRPT": lambda x: next(a for a in x if sum(t.duration for t in jobs[a.ijob]) == max(
-                sum(a.duration for a in j) for j in jobs if len(j) > 0)),
+            "SPT": lambda x: next(a for a in x if all(a.duration <= b.duration for b in x)),
+            "LPT": lambda x: next(a for a in x if all(a.duration >= b.duration for b in x)),
+            "SRPT": lambda x: next(a for a in x if all(sum(t.duration for t in jobs[a.ijob]) <= sum(t.duration for t in jobs[b.ijob]) for b in x)),
+            "LRPT": lambda x: next(a for a in x if all(sum(t.duration for t in jobs[a.ijob]) >= sum(t.duration for t in jobs[b.ijob]) for b in x)),
             "EST_": EST,
-            "rand": lambda x:random.choice(x)
+            "rand": lambda x: random.choice(x)
         }
 
         while len(realisables) > 0:
-            if random.random()<p_rand:
+            if random.random() < p_rand:
                 next_task = selectors["rand"](realisables)
             else:
                 next_task = selectors[strategy[:4]](realisables)
@@ -420,8 +419,16 @@ class Solution(Graphe):
             return max(chemins_possibles)
 
     @property
+    def gant_duration(self):
+        return max(len(e.split(" : ")[1]) // 3 for e in self.gant.split("\n")[1:-1])
+
+    @property
     def duration(self):
         return self.date_debut_tache("stF")
+
+    def gantduration(self):
+        # TODO : ATTENTION METHODE DEGUEULASSE A MODIFIER:
+        lignes = self.gant[1:]
 
     def get_cost(self, node_from, node_to=None):
         if node_to is not None:
