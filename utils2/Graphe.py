@@ -165,16 +165,30 @@ class Graphe:
         return str(node) in self.V
 
     def topological_list(self):
-        res = []
-        s = set([node for node in self.V if len(self.get_incomings(node)) == 0])
-        while len(s) > 0:
-            n = s.pop()
-            if n in res:
-                res.remove(n)
-            res.append(n)
-            for m in self.get_neighbors(n):
-                s.add(m)
-        return res
+        explored = []
+        start_node = next(node for node in self.V if len(self.get_incomings(node)) == 0)
+        stack = [start_node]
+        while len(stack) > 0:
+            to_explore = list(set(self.get_neighbors(stack[-1])) - set(explored))
+            if len(to_explore) == 0:
+                explored += stack.pop(-1)
+            stack += to_explore
+        explored.reverse()
+        return explored
+
+
+
+    #def topological_list(self):
+    #    res = []
+    #    s = set([node for node in self.V if len(self.get_incomings(node)) == 0])
+    #    while len(s) > 0:
+    #        n = s.pop()
+    #        if n in res:
+    #            res.remove(n)
+    #        res.append(n)
+    #        for m in self.get_neighbors(n):
+    #            s.add(m)
+    #    return res
 
     def is_path(self, node_from, node_to, level=0):
         if(level>50):
