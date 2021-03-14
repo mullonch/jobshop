@@ -106,7 +106,7 @@ class Solution(Graphe):
 
     def is_realisable(self):
         """
-        :return: Un booléen iniquant si la solution est réalisable (le graphe ne contient pas de cycle)
+        :return: Un booléen indiquant si la solution est réalisable (le graphe ne contient pas de cycle)
         """
         return not self.has_cycle()
 
@@ -320,25 +320,6 @@ class JobShop:
                 res[imac].link((t2.nodename, t1.nodename), cost=t2.duration)
         return res
 
-    def pick_first_solution(self):
-        # TODO faire mieux que ça
-        solution = Solution(self)
-        solution += self.get_time_graphe()
-        for g in self.get_ressources_graphes():
-            solution += next(iter(g.E))
-        return solution
-
-    def pick_default_solution(self):
-        """
-        :return: pour le pb par défaut, renvoie la solution vue en cours (makespan 12)
-        """
-        solution = Solution(self)
-        solution += self.get_time_graphe()
-        solution.link(("st(0, 0)", "st(1, 1)"), 3)
-        solution.link(("st(1, 0)", "st(0, 1)"), 2)
-        solution.link(("st(0, 2)", "st(1, 2)"), 2)
-        return solution
-
     def solve(self, solver : SolverInterface) ->Solution:
         return solver.solve(self)
 
@@ -415,7 +396,7 @@ class RandomSolver():
 
 class MultipleDescenteSolver(SolverInterface):
     def __init__(self, nb_starters=10, starter_strategy="random", starter_randomisation=100):
-        self.nb_starters = 10
+        self.nb_starters = nb_starters
         self.starter_strategy = starter_strategy
         self.starter_randomisation = starter_randomisation
 

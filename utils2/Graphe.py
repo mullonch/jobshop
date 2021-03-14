@@ -1,5 +1,5 @@
 import itertools
-
+import time
 
 
 class Graphe:
@@ -171,7 +171,7 @@ class Graphe:
         while len(stack) > 0:
             to_explore = list(set(self.get_neighbors(stack[-1])) - set(explored))
             if len(to_explore) == 0:
-                explored += stack.pop(-1)
+                explored += [stack.pop(-1)]
             stack += to_explore
         explored.reverse()
         return explored

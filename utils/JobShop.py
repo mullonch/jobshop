@@ -426,10 +426,6 @@ class Solution(Graphe):
     def duration(self):
         return self.date_debut_tache("stF")
 
-    def gantduration(self):
-        # TODO : ATTENTION METHODE DEGUEULASSE A MODIFIER:
-        lignes = self.gant[1:]
-
     def get_cost(self, node_from, node_to=None):
         if node_to is not None:
             return super().get_cost(node_from, node_to)
