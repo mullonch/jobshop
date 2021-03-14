@@ -43,6 +43,8 @@ class Solution(Graphe):
         self.problem = problem
 
     def init_starts(self):
+        if hasattr(self, 'starts'):
+            return
         if self.has_cycle():
             self.starts = dict.fromkeys(self.V, float('inf'))
         else:
@@ -188,10 +190,6 @@ class Solution(Graphe):
     @property
     def duration(self):
         return self.date_debut_tache("stF")
-
-    def gantduration(self):
-        # TODO : ATTENTION METHODE DEGUEULASSE A MODIFIER:
-        lignes = self.gant[1:]
 
     def get_cost(self, node_from, node_to=None):
         if node_to is not None:
