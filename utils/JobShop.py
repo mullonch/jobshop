@@ -280,6 +280,8 @@ class Solution(Graphe):
         self.problem = problem
 
     def init_starts(self):
+        if hasattr(self, 'starts'):
+            return
         if self.has_cycle():
             self.starts = dict.fromkeys(self.V, float('inf'))
         else:
