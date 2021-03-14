@@ -201,8 +201,21 @@ class Graphe:
         return any([self.is_path(next_node, node_to, level + 1) for next_node in self.get_neighbors(node_from)])
 
 
+    def is_cycle_from_node(self, node):
+        explored = []
+        stack = [node]
+        while len(stack) > 0:
+            if node in self.get_neighbors(stack[-1]):
+                return True
+            to_explore = list(set(self.get_neighbors(stack[-1])) - set(explored))
+            if len(to_explore) == 0:
+                explored += [stack.pop(-1)]
+            stack += to_explore
+        return False
+
     def has_cycle(self):
-        return any(self.is_path(n, n) for n in self.V)
+        return any(self.is_cycle_from_node(n) for n in self.V)
+        #return any(self.is_path(n, n) for n in self.V)
 
 
 class Edge:
