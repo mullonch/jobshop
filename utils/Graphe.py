@@ -169,10 +169,9 @@ class Graphe:
         start_node = next(node for node in self.V if len(self.get_incomings(node)) == 0)
         stack = [start_node]
         while len(stack) > 0:
-            print(stack)
             to_explore = list(set(self.get_neighbors(stack[-1])) - set(explored))
             if len(to_explore) == 0:
-                explored += stack.pop(-1)
+                explored += [stack.pop(-1)]
             stack += to_explore
         explored.reverse()
         return explored
