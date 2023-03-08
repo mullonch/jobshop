@@ -1,7 +1,9 @@
-from typing import Set, Iterable, Any, Sequence, List, Dict, Union, Optional, Self
+from __future__ import annotations
+from typing import Set, Iterable, Any, List, Union, Optional
 from functools import singledispatchmethod
 import numpy as np
 import itertools
+
 
 
 
@@ -104,7 +106,7 @@ class Graph:
         """
         self.e = set(edges)
 
-    def add_vertex(self, vertex:int|str)->Self:
+    def add_vertex(self, vertex:int|str)->Graph:
         """Add a new vertex to the graph.
 
         Args:
@@ -116,7 +118,7 @@ class Graph:
         self.v.add(str(vertex))
         return self
 
-    def add_vertices(self, vertices:Iterable[int|str])->Self:
+    def add_vertices(self, *vertices:int|str)->Graph:
         """Add a new vertices to the graph
 
         Args:
@@ -128,7 +130,7 @@ class Graph:
         self.v.update(str(a) for a in vertices)
         return self
 
-    def remove_vertex(self, vertex:int|str)->Self:
+    def remove_vertex(self, vertex:int|str)->Graph:
         """Remove a given vertex from the graph
 
         Args:
@@ -141,7 +143,7 @@ class Graph:
         self.v.remove(str(vertex))
         return self
 
-    def add_edge(self, edge:Edge)->Self:
+    def add_edge(self, edge:Edge)->Graph:
         """Add a new edge to the graph
 
         Args:
@@ -155,7 +157,7 @@ class Graph:
         self.edges.add(edge)
         return self
 
-    def link(self, v1:int|str, v2:int|str, cost:float=0)->Self:
+    def link(self, *vertices:int|str, cost:float=0)->Graph:
         """Creates a new edge linking two given vertices at given cost
 
         Args:
@@ -166,11 +168,11 @@ class Graph:
         Returns:
             Graph: self
         """
-        self.add_vertices((v1, v2))
-        self.add_edge(Edge(v1, v2, cost))
+        for v1, v2 in zip(vertices, vertices[1:]):
+            self.add_edge(Edge(v1, v2, cost))
         return self
 
-    def unlink(self, *vertices:int|str)->Self:
+    def unlink(self, *vertices:int|str)->Graph:
         """remove all edges linking the two given vertices
 
         Args:
@@ -180,8 +182,8 @@ class Graph:
         Returns:
             Graph: self
         """
-        for i, v in enumerate(vertices):
-            self.e -= set([e for e in self.e if e.node_from==vertices[i-1] and e.node_to==v])
+        for v1, v2 in zip(vertices, vertices[1:]):
+            self.e -= set([e for e in self.e if e.node_from == str(v1) and e.node_to == str(v2) ])
         return self
 
     def __str__(self)->str:
@@ -209,7 +211,7 @@ class Graph:
         """
         return len(self.v)
     
-    def __eq__(self, g:Self)->bool:
+    def __eq__(self, g:Graph)->bool:
         """
         Args:
             g (Graph): graph to compare
@@ -219,20 +221,20 @@ class Graph:
         """
         return self.v == g.v and self.e == g.e
     
-    def __gt__(self, g:Self)->bool:
+    def __gt__(self, g:Graph)->bool:
         return self.v > g.v and self.e > g.e
     
-    def __ge__(self, g:Self)->bool:
+    def __ge__(self, g:Graph)->bool:
         return self.v >= g.v and self.e >= g.e
     
-    def __lt__(self, g:Self)->bool:
+    def __lt__(self, g:Graph)->bool:
         return self.v < g.v and self.e < g.e
     
-    def __le__(self, g:Self)->bool:
+    def __le__(self, g:Graph)->bool:
         return self.v <= g.v and self.e <= g.e
 
     @singledispatchmethod
-    def __iadd__(self, item:Any)->Self:
+    def __iadd__(self, item:Any)->Graph:
         if isinstance(item, Graph):
             self.e.update(item.e)
             self.v.update(item.v)
@@ -241,28 +243,28 @@ class Graph:
         return self
     
     @__iadd__.register
-    def _(self, item:int)->Self:
+    def _(self, item:int):
         self.v.add(str(item))
         return self
 
     @__iadd__.register
-    def _(self, item:str)->Self:
+    def _(self, item:str):
         self.v.add(item)
         return self
 
     @__iadd__.register
-    def _(self, item:Edge)->Self:
+    def _(self, item:Edge):
         self.e.add(item)
         return self
 
     @__iadd__.register
-    def _(self, item:list|tuple|set)->Self:
+    def _(self, item:list|tuple|set|range):
         for elem in item:
             self+=elem
         return self
 
-    def __add__(self, item)->Self:
-        res = self.clone
+    def __add__(self, item)->Graph:
+        res = self.clone()
         res += item
         return res
 
@@ -287,11 +289,11 @@ class Graph:
         self.e.remove(item)
 
     @__isub__.register
-    def _(self, item:list|tuple|set):
+    def _(self, item:list|tuple|set|range):
         for elem in item:
             self-=elem
 
-    def __sub__(self, item)->Self:
+    def __sub__(self, item)->Graph:
         res = self.clone()
         res += item
         return res
@@ -315,18 +317,18 @@ class Graph:
         return item in self.e
 
     @__contains__.register
-    def _(self, item:list|tuple|set)->bool:
+    def _(self, item:list|tuple|set|range)->bool:
         return all(elem in self for elem in item)
     
-    def clone(self)->Self:
+    def clone(self)->Graph:
         return Graph(self.v, self.e)
     
-    def clear(self)->Self:
+    def clear(self)->Graph:
         self.v = set()
         self.e = set()
         return self
 
-    def clear_edges(self)->Self:
+    def clear_edges(self)->Graph:
         self.e = set()
         return self
 
@@ -336,24 +338,24 @@ class Graph:
     def __hash__(self):
         return hash(tuple(self.e) + tuple(self.v))
     
-    def __and__(self, g:Self)->Self:
+    def __and__(self, g:Graph)->Graph:
         return Graph(self.e & g.e, self.v & g.v)
     
-    def __or__(self, g:Self)->Self:
+    def __or__(self, g:Graph)->Graph:
         return Graph(self.e | g.e, self.v | g.v)
     
-    def __xor__(self, g:Self)->Self:
+    def __xor__(self, g:Graph)->Graph:
         return Graph(self.e ^ g.e, self.v ^ g.v)
     
-    def __iand__(self, g:Self)->None:
+    def __iand__(self, g:Graph)->None:
         self.v &= g.v
         self.e &= g.e
 
-    def __ior__(self, g:Self)->None:
+    def __ior__(self, g:Graph)->None:
         self.v |= g.v
         self.e |= g.e
 
-    def __ixor__(self, g:Self)->None:
+    def __ixor__(self, g:Graph)->None:
         self.v ^= g.v
         self.e ^= g.e
 

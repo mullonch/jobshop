@@ -15,9 +15,10 @@ class SolverInterface(metaclass=ABCMeta):
 class GreedySolver(SolverInterface):
     ACCEPTED_STRATEGIES = ["SPT", "LPT", "SRPT", "LRPT", "EST_SPT", "EST_LPT", "EST_LRPT", "EST_SRPT", "RANDOM"]
 
-    def __init__(self, strategy="SPT", p_random=0):
+    def __init__(self, strategy="EST_SPT", p_random:float=0.):
         self.trace = []
-        if strategy.upper() not in self.ACCEPTED_STRATEGIES:
+        strategy = strategy.upper()
+        if strategy not in self.ACCEPTED_STRATEGIES:
             raise NameError("Unrecognized strategy : " + strategy)
         self.strategy = strategy
         self.p_random = p_random
@@ -54,12 +55,12 @@ class GreedySolver(SolverInterface):
             "LRPT": lambda x: next(a for a in x if all(
                 sum(t.duration for t in jobs[a.ijob]) >= sum(t.duration for t in jobs[b.ijob]) for b in x)),
             "EST_": EST,
-            "rand": lambda x: random.choice(x)
+            "RAND": lambda x: random.choice(x)
         }
 
         while len(realisables) > 0:
             if random.random() < self.p_random:
-                next_task = selectors["rand"](realisables)
+                next_task = selectors["RAND"](realisables)
             else:
                 next_task = selectors[self.strategy[:4]](realisables)
             result[next_task.machine].append(jobs[next_task.ijob].pop(0))
@@ -87,6 +88,23 @@ class RandomSolver(SolverInterface):
     def solve(self, problem: JobShop):
         return GreedySolver("RANDOM").solve(problem)
 
+class RandomSearchSolver(SolverInterface):
+    def __init__(self, budget:int=100):
+        self.budget = budget
+
+    def solve(self, problem: JobShop):
+        solver = GreedySolver(strategy="random")
+        return min([solver.solve(problem) for _ in range(self.budget)], key=lambda x:x.duration)
+
+class DefinitelyShouldNotDoThatException(Exception):
+    ...
+
+class BruteForceSolver(SolverInterface):
+    def __init__(self):
+        ...
+
+    def solve(self, problem: JobShop):
+        raise DefinitelyShouldNotDoThatException("You should not do that.")
 
 class MultipleDescenteSolver(SolverInterface):
     def __init__(self, nb_starters=10, starter_strategy="random", starter_randomisation=1):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import itertools
-from typing import List, Dict, Self
+from typing import List, Dict
 from functools import cached_property
 from copy import deepcopy
 
@@ -89,7 +89,7 @@ class Solution(Graph):
         s += problem.time_graph
         for machine in matrix:
             for i in range(1, len(machine)):
-                s.link((machine[i - 1].nodename, machine[i].nodename), machine[i - 1].duration)
+                s.link(machine[i - 1].nodename, machine[i].nodename, cost=machine[i - 1].duration)
         return s
 
     def __str__(self):
@@ -213,7 +213,7 @@ class JobShop:
         self.jobs.append(job)
 
     @staticmethod
-    def from_instance_file(filename="instances/default_instance")->JobShop:
+    def from_instance_file(filename:str="instances/default_instance")->JobShop:
         with open(filename, "r") as file:
             lines  = [[int(a) for a in filter(None, line.split(" "))] for line in file.read().split("\n") if line != "" and line[0] != "#"]
         nb_jobs, nb_machines = lines.pop(0)
@@ -224,7 +224,6 @@ class JobShop:
         jobs = []
         for j in range(nb_jobs):
             jobs.append([Task(machines[j][i], durations[j][i], j, i) for i in range(nb_machines)])
-
         return JobShop(nb_jobs, nb_machines, jobs)
     
     @property
@@ -251,7 +250,7 @@ class JobShop:
     def get_task_by_nodename(self, nodename):
         infos = nodename.split(", ")
         return self.get_task(int(infos[0][3:]), int(infos[1][:-1]))
-    
+
     @property
     def time_graph(self)->Graph:
         res = Graph("stS", "stF")
@@ -260,10 +259,10 @@ class JobShop:
             prec_cost = 0
             for task in job:
                 res += task.nodename
-                res.link(prec_node, task.nodename, prec_cost)
+                res.link(prec_node, task.nodename, cost=prec_cost)
                 prec_node = task.nodename
                 prec_cost = task.duration
-            res.link(prec_node, "stF", prec_cost)
+            res.link(prec_node, "stF", cost=prec_cost)
         return res
     
     @property
@@ -280,9 +279,3 @@ class JobShop:
     @property
     def graph(self)->Graph:
         return self.time_graph + self.ressources_graphs
-
-if __name__ == "__main__":
-    js = JobShop.from_instance_file()
-    print(js.time_graph)
-    for g in js.ressources_graphs:
-        print(g)
